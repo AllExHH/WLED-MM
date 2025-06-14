@@ -136,15 +136,19 @@ static bool udpSyncConnected = false;         // UDP connection status -> true i
 
 // audioreactive variables
 #ifdef ARDUINO_ARCH_ESP32
+#ifndef SR_AGC // Automatic gain control mode
+  #ifdef SR_SQUELCH
+   #define SR_AGC 1 //  default "squelch" was provided --> default mode = on
+  #else
+   #define SR_AGC 0 // default mode = off
+  #endif
+#endif
+
 static float    micDataReal = 0.0f;             // MicIn data with full 24bit resolution - lowest 8bit after decimal point
 static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our AGC multiplier
 static float    sampleAvg = 0.0f;               // Smoothed Average sample - sampleAvg < 1 means "quiet" (simple noise gate)
 static float    sampleAgc = 0.0f;               // Smoothed AGC sample
-#ifdef SR_SQUELCH
-static uint8_t  soundAgc = 1;                   // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value) - enable AGC if default "squelch" was provided
-#else
-static uint8_t  soundAgc = 0;                   // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
-#endif
+static uint8_t  soundAgc = SR_AGC;              // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value) - enable AGC if default "squelch" was provided
 
 #endif
 static float    volumeSmth = 0.0f;              // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
