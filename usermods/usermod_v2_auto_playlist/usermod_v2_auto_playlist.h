@@ -257,7 +257,7 @@ class AutoPlaylistUsermod : public Usermod {
             // after change_lockout. Better for smaller change_lockout values.
 
             suspendPlaylist();       // suspend the playlist engine before changing to another preset
-            applyPreset(newpreset);
+            applyPreset(newpreset, CALL_MODE_NOTIFICATION);
             
             #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
             USER_PRINTF("*** CHANGE distance = %4lu - change_interval was %5ldms - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
