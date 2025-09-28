@@ -537,7 +537,7 @@ void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t
 
   stateChanged = true; // send UDP/WS broadcast
 
-  if (stop>start) markForBlank(); //turn old segment range off // WLEDMM stop > start
+  if (stop>start) markForBlank(); //turn old segment range off // WLEDMM stop > start // toDo: check if this can be skipped when boundsUnchanged
   if (i2 <= i1) { //disable segment
     stop = 0;
     markForReset();
@@ -558,8 +558,11 @@ void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t
     spacing = spc;
   }
   if (ofs < UINT16_MAX) offset = ofs;
-  markForReset();
-  if (!boundsUnchanged) refreshLightCapabilities();
+
+  if (!boundsUnchanged) {
+    markForReset();
+    refreshLightCapabilities();
+  }
 }
 
 
