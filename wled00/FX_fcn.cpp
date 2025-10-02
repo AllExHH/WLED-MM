@@ -542,6 +542,9 @@ void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t
 
   if (stop>start) markForBlank(); //turn old segment range off // WLEDMM stop > start // toDo: check if this can be skipped when boundsUnchanged
   if (i2 <= i1) { //disable segment
+    #ifdef WLED_ENABLE_GIF
+    endImagePlayback(this);
+    #endif
     stop = 0;
     markForReset();
     return;

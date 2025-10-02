@@ -16,6 +16,10 @@
 bool canUseSerial(void);                        // WLEDMM implemented in wled_serial.cpp
 void strip_wait_until_idle(String whoCalledMe); // WLEDMM implemented in FX_fcn.cpp
 bool strip_uses_global_leds(void) __attribute__((pure));  // WLEDMM implemented in FX_fcn.cpp
+#ifdef WLED_ENABLE_GIF
+struct Segment;                                 // forward declaration
+void endImagePlayback(Segment *seg);            // implemented in image_loader.cpp
+#endif
 
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #define USE_GET_MILLISECOND_TIMER
@@ -584,6 +588,9 @@ typedef struct Segment {
       // WLEDMM only delete segments when they are not in use
       #ifdef ARDUINO_ARCH_ESP32
       strip_wait_until_idle("~Segment()");
+      #endif
+      #ifdef WLED_ENABLE_GIF
+      endImagePlayback(this);
       #endif
 
       if ((Segment::_globalLeds == nullptr) && !strip_uses_global_leds() && (ledsrgb != nullptr)) {free(ledsrgb); ledsrgb = nullptr;}  // WLEDMM we need "!strip_uses_global_leds()" to avoid crashes (#104)
