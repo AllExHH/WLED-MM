@@ -463,13 +463,14 @@ class BusManager {
       // WLEDMM clear cached Bus info
       lastBus = nullptr;
       laststart = 0;
-      lastend = 0;
+      lastlen= 0;
       slowMode = isRTMode;
     }
 
     void setStatusPixel(uint32_t c);
 
-    void setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1);
+    void setPixelColor(uint16_t pix, uint32_t c);                 // WLEDMM third parameter "cct" is never used - removed
+    //void setPixelColor(uint16_t pix, uint32_t c, int16_t cct) {Bus::setCCT(cct); setPixelColor(pix, c);};   // WLEDMM legacy support - slow, avoid using it
 
     void setBrightness(uint8_t b, bool immediate=false);          // immediate=true is for use in ABL, it applies brightness immediately (warning: inefficient)
 
@@ -504,7 +505,7 @@ class BusManager {
     // WLEDMM cache last used Bus -> 20% to 30% speedup when using many LED pins
     Bus *lastBus = nullptr;
     unsigned laststart = 0;
-    unsigned lastend = 0;
+    unsigned lastlen = 0;
     bool slowMode = false; // WLEDMM not sure why we need this. But its necessary.
 
     inline uint8_t getNumVirtualBusses() const {
