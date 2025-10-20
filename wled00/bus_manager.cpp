@@ -79,6 +79,24 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte 
 #include "wled.h"
 #endif
 
+// WLEDMM moved here (from colors.cpp) for better optimization
+static inline uint32_t __attribute__((hot)) colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb)  // WLEDMM: IRAM_ATTR removed, inline for speed
+{
+  //remember so that slow colorKtoRGB() doesn't have to run for every setPixelColor()
+  static byte correctionRGB[4] = {255,255,255,0};               // default to neutral
+  static uint16_t lastKelvin = 0;
+  if (lastKelvin != kelvin) {
+    colorKtoRGB(kelvin, correctionRGB);  // convert Kelvin to RGB (slow)
+    lastKelvin = kelvin;
+  }
+  byte rgbw[4];
+  rgbw[0] = ((uint_fast16_t) correctionRGB[0] * R(rgb)) /255; // correct R //WLEDMM changed to fast type
+  rgbw[1] = ((uint_fast16_t) correctionRGB[1] * G(rgb)) /255; // correct G
+  rgbw[2] = ((uint_fast16_t) correctionRGB[2] * B(rgb)) /255; // correct B
+  rgbw[3] =                                W(rgb);
+  return RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]);
+}
+
 
 void ColorOrderMap::add(uint16_t start, uint16_t len, uint8_t colorOrder) {
   if (_count >= WLED_MAX_COLOR_ORDER_MAPPINGS) {

@@ -310,6 +310,8 @@ static float maxf (float v, float w)  // WLEDMM better use standard library fmax
 
 // adjust RGB values based on color temperature in K (range [2800-10200]) (https://en.wikipedia.org/wiki/Color_balance)
 // called from bus manager when color correction is enabled!
+#if 0
+// WLEDMM moved into bus_manager.cpp for better optimization
 uint32_t __attribute__((hot)) IRAM_ATTR_YN colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb)  // WLEDMM: IRAM_ATTR_YN
 {
   //remember so that slow colorKtoRGB() doesn't have to run for every setPixelColor()
@@ -324,6 +326,7 @@ uint32_t __attribute__((hot)) IRAM_ATTR_YN colorBalanceFromKelvin(uint16_t kelvi
   rgbw[3] =                                W(rgb);
   return RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]);
 }
+#endif
 
 //approximates a Kelvin color temperature from an RGB color.
 //this does no check for the "whiteness" of the color,
