@@ -142,25 +142,37 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
 //get RGB values from color temperature in K (https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html)
 void colorKtoRGB(uint16_t kelvin, byte* rgb) //white spectrum to rgb, calc
 {
+  // WLEDMM safe exit (do nothing) to avoid logf domain errors. argument to logf must be >= 1.0f to avoid bad result 0 or -inf; 
+  //        kelvin >65k might be a signed/unsigned conversion error
+  if ((kelvin < 1200) || (kelvin > 65000)) {
+    rgb[0] = 255;
+    rgb[1] = 255;
+    rgb[2] = 255;
+    rgb[3] = 0;
+    return;
+  }
+
   int r = 0, g = 0, b = 0;
-  float temp = kelvin / 100.0f;
+  float temp = float(kelvin) / 100.0f;  // WLEDMM "float()" added - to make sure its done in float, not in double or int
   if (temp <= 66.0f) {
     r = 255;
     g = roundf(99.4708025861f * logf(temp) - 161.1195681661f);
     if (temp <= 19.0f) {
       b = 0;
     } else {
-      b = roundf(138.5177312231f * logf((temp - 10.0f)) - 305.0447927307f);
+      b = roundf(138.5177312231f * logf((temp - 10.0f)) - 305.0447927307f); // safe because temp > 19.0f
     }
   } else {
+    // temp-60.0f is always > 0 here (since temp>66)
     r = roundf(329.698727446f * powf((temp - 60.0f), -0.1332047592f));
     g = roundf(288.1221695283f * powf((temp - 60.0f), -0.0755148492f));
     b = 255;
   }
   //g += 12; //mod by Aircoookie, a bit less accurate but visibly less pinkish
-  rgb[0] = (uint8_t) constrain(r, 0, 255);
-  rgb[1] = (uint8_t) constrain(g, 0, 255);
-  rgb[2] = (uint8_t) constrain(b, 0, 255);
+  // WLEDMM min(max()) is faster than constrain()
+  rgb[0] = (uint8_t) min(max(r, 0), 255);
+  rgb[1] = (uint8_t) min(max(g, 0), 255);
+  rgb[2] = (uint8_t) min(max(b, 0), 255);
   rgb[3] = 0;
 }
 

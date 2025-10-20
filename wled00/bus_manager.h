@@ -175,7 +175,7 @@ class Bus {
           _type == TYPE_ANALOG_2CH    || _type == TYPE_ANALOG_5CH) return true;
       return false;
     }
-    static void setCCT(uint16_t cct) {
+    static void setCCT(int16_t cct) {  // WLEDMM bugfix: parameter must be signed, otherwise "-1" becomes 65535 --> undefined behaviour on RISC-V
       _cct = cct;
     }
     static void setCCTBlend(uint8_t b) {
