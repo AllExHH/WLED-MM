@@ -1361,12 +1361,12 @@ uint32_t IRAM_ATTR  __attribute__((hot)) BusManager::getPixelColor(uint_fast16_t
     uint_fast16_t blen = b->getLength();
 
     if ((uint_fast16_t)(pix - bstart) < blen) {  // Unsigned arithmetic trick for fast range check
-      if (!slowMode) {
+      //if (!slowMode) {
         // Cache bus info for next call
         lastBus = b;
         laststart = bstart; 
         lastlen = blen;
-      }
+      //}
       return b->getPixelColor(pix - bstart);     // done - found one
     }
   }
@@ -1388,12 +1388,12 @@ uint32_t IRAM_ATTR  __attribute__((hot)) BusManager::getPixelColorRestored(uint_
     uint_fast16_t blen = b->getLength();
 
     if ((uint_fast16_t)(pix - bstart) < blen) {  // Unsigned arithmetic trick for range check
-      if (!slowMode) {
+      //if (!slowMode) {
         // Cache bus info for next call
         lastBus = b;
         laststart = bstart; 
         lastlen = blen;
-      }
+      //}
       return b->getPixelColorRestored(pix - bstart);
     }
   }
