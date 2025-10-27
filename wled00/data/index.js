@@ -1977,7 +1977,7 @@ function readState(s,command=false)
 			errstr = "Buffer locked!";
 			break;
 		case  7:
-			errstr = "No RAM for buffer!";
+			errstr = "No RAM for pixel buffer!";
 			break;
 		case  8:
 			errstr = "Effect RAM depleted!";

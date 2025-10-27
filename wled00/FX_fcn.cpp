@@ -249,7 +249,7 @@ bool Segment::allocateData(size_t len) {
   Segment::addUsedSegmentData(len);
   _dataLen = len;
   memset(data, 0, len);
-  if (errorFlag == ERR_LOW_SEG_MEM) errorFlag = ERR_NONE; // WLEDMM reset errorflag on success
+  if ((errorFlag == ERR_LOW_SEG_MEM) || (errorFlag == ERR_LOW_MEM) || (errorFlag == ERR_NORAM_PX)) errorFlag = ERR_NONE; // WLEDMM reset errorflag on success
   return true;
 }
 
@@ -1844,7 +1844,7 @@ void WS2812FX::finalizeInit(void)
     //#endif
       if (arrSize > 0) Segment::_globalLeds = (CRGB*) malloc(arrSize); // WLEDMM avoid malloc(0)
     if ((Segment::_globalLeds != nullptr) && (arrSize > 0)) memset(Segment::_globalLeds, 0, arrSize); // WLEDMM avoid dereferencing nullptr
-    if ((Segment::_globalLeds == nullptr) && (arrSize > 0)) errorFlag = ERR_LOW_MEM; // WLEDMM raise errorflag
+    if ((Segment::_globalLeds == nullptr) && (arrSize > 0)) errorFlag = ERR_NORAM_PX; // WLEDMM raise errorflag
   }
 
   //segments are created in makeAutoSegments();
