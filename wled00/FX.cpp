@@ -9299,7 +9299,7 @@ uint16_t mode_particlefireworks(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,Fast;;!;2;pal=11,ix=50,c1=40,c2=0,c3=12";
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,Fast;;!;2;pal=11,ix=200,sx=180,c1=196,c2=0,c3=10,o3=1";
 
 /*
   Particle Volcano
@@ -9373,7 +9373,7 @@ uint16_t mode_particlevolcano(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Speed,Intensity,Move,Bounce,Spread,AgeColor,Walls,Collide;;!;2;pal=35,sx=100,ix=190,c1=0,c2=160,c3=6,o1=1";
+static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Speed,Intensity,Move,Bounce,Spread,AgeColor,Walls,Collide;;!;2;pal=35,sx=208,ix=190,c1=0,c2=190,c3=16,o1=1";
 
 /*
   Particle Fire
@@ -9427,7 +9427,7 @@ uint16_t mode_particlefire(void) {
       PartSys->sources[i].source.ttl = 20 + hw_random16((SEGMENT.custom1 * SEGMENT.custom1) >> 8) / (1 + (firespeed >> 5)); //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed
       PartSys->sources[i].maxLife = hw_random16(SEGMENT.virtualHeight() >> 1) + 16; // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
       PartSys->sources[i].minLife = PartSys->sources[i].maxLife >> 1;
-      PartSys->sources[i].vx = hw_random16(4) - 2; // emitting speed (sideways)
+      PartSys->sources[i].vx = hw_random16(5) - 2; // emitting speed (sideways)
       PartSys->sources[i].vy = (SEGMENT.virtualHeight() >> 1) + (firespeed >> 4) + (SEGMENT.custom1 >> 4); // emitting speed (upwards)
       PartSys->sources[i].var = 2 + hw_random16(2 + (firespeed >> 4)); // speed variation around vx,vy (+/- var)
     }
@@ -10116,7 +10116,7 @@ uint16_t mode_particleGEQ(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS GEQ 2D@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0";
+static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS GEQ 2D@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=232,ix=200,c1=0,c3=9";
 
 /*
   Particle rotating GEQ
