@@ -1059,8 +1059,9 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
 void __attribute__((hot)) IRAM_ATTR BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c) {
   if ( pix >= _len) return;
-  // if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
-
+  #if 0
+  if ((correctWB) && (_cct >= 1900)) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT - reduces framerate by up to 10%. If you still want it, change the line above to "#if 1"
+  #endif
   if (_ledBuffer) {
     CRGB fastled_col = CRGB(c);
     if (_ledBuffer[pix] != fastled_col) {
