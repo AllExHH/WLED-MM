@@ -195,7 +195,7 @@ void WS2812FX::setUpMatrix() {
 }
 
 // absolute matrix version of setPixelColor(), without error checking
-void IRAM_ATTR __attribute__((hot)) WS2812FX::setPixelColorXY_fast(int x, int y, uint32_t col) //WLEDMM: IRAM_ATTR conditionally
+void IRAM_ATTR __attribute__((hot)) WS2812FX::setPixelColorXY_fast(int x, int y, uint32_t col) const //WLEDMM: IRAM_ATTR conditionally
 {
   uint_fast16_t index = y * Segment::maxWidth + x;
   if (index < customMappingSize) index = customMappingTable[index];
@@ -204,7 +204,7 @@ void IRAM_ATTR __attribute__((hot)) WS2812FX::setPixelColorXY_fast(int x, int y,
 }
 
 // absolute matrix version of setPixelColor()
-void IRAM_ATTR_YN WS2812FX::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM: IRAM_ATTR conditionally
+void IRAM_ATTR_YN WS2812FX::setPixelColorXY(int x, int y, uint32_t col) const //WLEDMM: IRAM_ATTR conditionally
 {
 #ifndef WLED_DISABLE_2D
   if (!isMatrix) return; // not a matrix set-up

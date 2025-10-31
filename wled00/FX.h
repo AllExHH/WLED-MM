@@ -1095,12 +1095,12 @@ class WS2812FX {  // 96 bytes
 
     void
       setUpMatrix(),
-      setPixelColorXY_fast(int x, int y, uint32_t c),
-      setPixelColorXY(int x, int y, uint32_t c);
+      setPixelColorXY_fast(int x, int y, uint32_t c) const,
+      setPixelColorXY(int x, int y, uint32_t c) const;
 
     // outsmart the compiler :) by correctly overloading
-    inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
-    inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
+    inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) const { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
+    inline void setPixelColorXY(int x, int y, CRGB c)                             const { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
 
     uint32_t
       getPixelColorXY(uint16_t, uint16_t)  const;
