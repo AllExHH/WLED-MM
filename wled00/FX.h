@@ -21,6 +21,11 @@ bool strip_uses_global_leds(void) __attribute__((pure));  // WLEDMM implemented 
 #define USE_GET_MILLISECOND_TIMER
 #include "FastLED.h"
 
+ // WLEDMM strip.sPC() needs to know "busses", so we pull in the declarition
+#include "pin_manager.h"  // BusManager needs to know pinManager
+#include "bus_manager.h"
+extern BusManager busses; // same as wled.h
+
 #define DEFAULT_BRIGHTNESS (uint8_t)127
 #define DEFAULT_MODE       (uint8_t)0
 #define DEFAULT_SPEED      (uint8_t)128
@@ -957,7 +962,6 @@ class WS2812FX {  // 96 bytes
       resetSegments(bool boundsOnly = false), //WLEDMM add boundsOnly
       makeAutoSegments(bool forceReset = false),
       fixInvalidSegments(),
-      setPixelColor(int n, uint32_t c),
       show(void),
       setTargetFps(uint8_t fps),
       enumerateLedmaps(); //WLEDMM (from fcn_declare)
@@ -968,8 +972,8 @@ class WS2812FX {  // 96 bytes
     void setupEffectData(void); // add default effects to the list; defined in FX.cpp
 
     // outsmart the compiler :) by correctly overloading
-    inline void setPixelColor(int n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) { setPixelColor(n, RGBW32(r,g,b,w)); }
-    inline void setPixelColor(int n, CRGB c) { setPixelColor(n, c.red, c.green, c.blue); }
+    inline void setPixelColor(int n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) const { setPixelColor(n, RGBW32(r,g,b,w)); }
+    inline void setPixelColor(int n, CRGB c) const { setPixelColor(n, c.red, c.green, c.blue); }
     inline void trigger(void) { _triggered = true; } // Forces the next frame to be computed on all active segments.
     inline void setShowCallback(show_callback cb) { _callback = cb; }
     inline void setTransition(uint16_t t) { _transitionDur = t; }
@@ -1024,8 +1028,33 @@ class WS2812FX {  // 96 bytes
     uint32_t
       now,
       timebase;
-    uint32_t __attribute__((pure)) getPixelColor(uint_fast16_t)  const;   // WLEDMM attribute pure = does not have side-effects
-    uint32_t __attribute__((pure)) getPixelColorRestored(uint_fast16_t i)  const;// WLEDMM gets the original color from the driver (without downscaling by _bri)
+
+    // //////////////
+    // inline methods for 1D
+    // WLEDMM setPixelColor and getPixelColor moved from FX_fcn.cpp for speed (inlining)
+
+    inline void setPixelColor(int i, uint32_t color32) const
+    {
+      if (i < customMappingSize) i = customMappingTable[i];
+      if (i >= _length) return;
+        busses.setPixelColor(i, color32);
+    }
+
+    inline uint32_t getPixelColor(uint_fast16_t i) const
+    {
+      if (i < customMappingSize) i = customMappingTable[i];
+      if (i >= _length) return 0;
+      return busses.getPixelColor(i);
+    }
+
+    // WLEDMM gets the original color from the driver (without downscaling by _bri)
+    inline uint32_t getPixelColorRestored(uint_fast16_t i)  const  
+    {
+      if (i < customMappingSize) i = customMappingTable[i];
+      if (i >= _length) return 0;
+      return busses.getPixelColorRestored(i);
+    }
+
 
     inline uint32_t getLastShow(void)  const { return _lastShow; }
     inline uint32_t segColor(uint8_t i)  const { return _colors_t[i]; }
@@ -1093,17 +1122,63 @@ class WS2812FX {  // 96 bytes
     std::vector<Panel> panel;
 #endif
 
-    void
-      setUpMatrix(),
-      setPixelColorXY_fast(int x, int y, uint32_t c) const,
-      setPixelColorXY(int x, int y, uint32_t c) const;
+    void setUpMatrix();
+
+    // //////////////
+    // inline methods for 2D
+    // WLEDMM setPixelColorXY and getPixelColorXY moved from FX_2Dfcn.cpp for speed (inlining)
+
+    // absolute matrix version of setPixelColor(), without error checking // WLEDMM 
+    inline void __attribute__((hot)) setPixelColorXY_fast(int x, int y, uint32_t color32) const //WLEDMM: IRAM_ATTR conditionally
+    {
+      uint_fast16_t index = y * Segment::maxWidth + x;
+      if (index < customMappingSize) index = customMappingTable[index];
+      if (index >= _length) return;
+      busses.setPixelColor(index, color32);
+    }
+
+    // absolute matrix version of setPixelColor()
+    inline void setPixelColorXY(int x, int y, uint32_t color32) const //WLEDMM: IRAM_ATTR conditionally
+    {
+      #ifndef WLED_DISABLE_2D
+      if (!isMatrix) return; // not a matrix set-up
+        uint_fast16_t index = y * Segment::maxWidth + x;
+      #else
+      uint16_t index = x;
+      #endif
+      if (index < customMappingSize) index = customMappingTable[index];
+      if (index >= _length) return;
+      busses.setPixelColor(index, color32);
+    }
+
+    // returns RGBW values of pixel
+    inline uint32_t __attribute__((hot)) getPixelColorXY(uint16_t x, uint16_t y) const {
+      #ifndef WLED_DISABLE_2D
+      uint_fast16_t index = (y * Segment::maxWidth + x); //WLEDMM: use fast types
+      #else
+      uint16_t index = x;
+      #endif
+      if (index < customMappingSize) index = customMappingTable[index];
+      if (index >= _length) return 0;
+      return busses.getPixelColor(index);
+    }
+
+    // WLEDMM gets the original color from the driver (without downscaling by _bri)
+    inline uint32_t __attribute__((hot)) getPixelColorXYRestored(uint16_t x, uint16_t y)  const {
+      #ifndef WLED_DISABLE_2D
+        uint_fast16_t index = (y * Segment::maxWidth + x); //WLEDMM: use fast types
+      #else
+        uint16_t index = x;
+      #endif
+      if (index < customMappingSize) index = customMappingTable[index];
+      if (index >= _length) return 0;
+      return busses.getPixelColorRestored(index);
+    }
+
 
     // outsmart the compiler :) by correctly overloading
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) const { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
     inline void setPixelColorXY(int x, int y, CRGB c)                             const { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
-
-    uint32_t
-      getPixelColorXY(uint16_t, uint16_t)  const;
 
   // end 2D support
 
@@ -1120,8 +1195,6 @@ class WS2812FX {  // 96 bytes
 
     std::vector<segment> _segments;
     friend struct Segment;
-
-    uint32_t getPixelColorXYRestored(uint16_t x, uint16_t y)  const;  // WLEDMM gets the original color from the driver (without downscaling by _bri)
 
   private:
     uint16_t _length;

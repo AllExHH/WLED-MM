@@ -1969,26 +1969,11 @@ void WS2812FX::service() {
   _isServicing = false;
 }
 
-void IRAM_ATTR WS2812FX::setPixelColor(int i, uint32_t col)
-{
-  if (i < customMappingSize) i = customMappingTable[i];
-  if (i >= _length) return;
-  busses.setPixelColor(i, col);
-}
 
-uint32_t WS2812FX::getPixelColor(uint_fast16_t i) const // WLEDMM fast int types
-{
-  if (i < customMappingSize) i = customMappingTable[i];
-  if (i >= _length) return 0;
-  return busses.getPixelColor(i);
-}
+// WLEDMM: WS2812FX::setPixelColor() moved FX.h for speed (inlining)
+// WLEDMM: WS2812FX::getPixelColor() moved FX.h for speed (inlining)
+// WLEDMM: WS2812FX::getPixelColorRestored() moved FX.h for speed (inlining)
 
-uint32_t WS2812FX::getPixelColorRestored(uint_fast16_t i)  const  // WLEDMM gets the original color from the driver (without downscaling by _bri)
-{
-  if (i < customMappingSize) i = customMappingTable[i];
-  if (i >= _length) return 0;
-  return busses.getPixelColorRestored(i);
-}
 
 //DISCLAIMER
 //The following function attemps to calculate the current LED power usage,

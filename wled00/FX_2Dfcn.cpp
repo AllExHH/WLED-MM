@@ -194,51 +194,19 @@ void WS2812FX::setUpMatrix() {
 #endif
 }
 
+
 // absolute matrix version of setPixelColor(), without error checking
-void IRAM_ATTR __attribute__((hot)) WS2812FX::setPixelColorXY_fast(int x, int y, uint32_t col) const //WLEDMM: IRAM_ATTR conditionally
-{
-  uint_fast16_t index = y * Segment::maxWidth + x;
-  if (index < customMappingSize) index = customMappingTable[index];
-  if (index >= _length) return;
-  busses.setPixelColor(index, col);
-}
+// WLEDMM: WS2812FX::setPixelColorXY_fast() moved FX.h for speed (inlining)
 
 // absolute matrix version of setPixelColor()
-void IRAM_ATTR_YN WS2812FX::setPixelColorXY(int x, int y, uint32_t col) const //WLEDMM: IRAM_ATTR conditionally
-{
-#ifndef WLED_DISABLE_2D
-  if (!isMatrix) return; // not a matrix set-up
-  uint_fast16_t index = y * Segment::maxWidth + x;
-#else
-  uint16_t index = x;
-#endif
-  if (index < customMappingSize) index = customMappingTable[index];
-  if (index >= _length) return;
-  busses.setPixelColor(index, col);
-}
+// WLEDMM: WS2812FX::setPixelColorXY() moved FX.h for speed (inlining)
 
 // returns RGBW values of pixel
-uint32_t __attribute__((hot)) WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) const {
-#ifndef WLED_DISABLE_2D
-  uint_fast16_t index = (y * Segment::maxWidth + x); //WLEDMM: use fast types
-#else
-  uint16_t index = x;
-#endif
-  if (index < customMappingSize) index = customMappingTable[index];
-  if (index >= _length) return 0;
-  return busses.getPixelColor(index);
-}
+// WLEDMM: WS2812FX::getPixelColorXY() moved FX.h for speed (inlining)
 
-uint32_t __attribute__((hot)) WS2812FX::getPixelColorXYRestored(uint16_t x, uint16_t y)  const {  // WLEDMM gets the original color from the driver (without downscaling by _bri)
-  #ifndef WLED_DISABLE_2D
-    uint_fast16_t index = (y * Segment::maxWidth + x); //WLEDMM: use fast types
-  #else
-    uint16_t index = x;
-  #endif
-  if (index < customMappingSize) index = customMappingTable[index];
-  if (index >= _length) return 0;
-  return busses.getPixelColorRestored(index);
-}
+// WLEDMM gets the original color from the driver (without downscaling by _bri)
+// WLEDMM: WS2812FX::getPixelColorXYRestored() moved FX.h for speed (inlining)
+
 
 ///////////////////////////////////////////////////////////
 // Segment:: routines
