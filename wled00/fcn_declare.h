@@ -66,7 +66,7 @@ void colorXYtoRGB(float x, float y, byte* rgb); // only defined if huesync disab
 void colorRGBtoXY(byte* rgb, float* xy); // only defined if huesync disabled TODO
 void colorFromDecOrHexString(byte* rgb, char* in);
 bool colorFromHexString(byte* rgb, const char* in);
-uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
+//uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);                             // WLEDMM function moved into bus_manager.cpp for better optimization
 uint16_t __attribute__((const)) approximateKelvinFromRGB(uint32_t rgb);                       // WLEDMM: added attribute const
 void setRandomColor(byte* rgb);
 uint8_t gamma8_cal(uint8_t b, float gamma);
