@@ -51,9 +51,16 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 
 //colors.cpp
 #if !defined(ARDUINO_ARCH_ESP32) || !defined(WLEDMM_FASTPATH) || defined(WLEDMM_SAVE_FLASH)  // WLEDMM: color utils moved into colorTools.hpp, so the compiler may inline these functions (faster)
+#if !defined(FASTLED_VERSION) // pull in FastLED if we don't have it yet (we need the CRGB type)
+  #define FASTLED_INTERNAL
+  #include <FastLED.h>
+#endif
 uint32_t __attribute__((const)) color_blend(uint32_t,uint32_t,uint_fast16_t,bool b16=false);  // WLEDMM: added attribute const
 uint32_t __attribute__((const)) color_add(uint32_t,uint32_t, bool fast=false);                // WLEDMM: added attribute const
 uint32_t __attribute__((const)) color_fade(uint32_t c1, uint8_t amount, bool video=false);
+#undef ColorFromPalette // overwrite any existing override
+CRGB __attribute__((hot,const)) ColorFromPaletteWLED(const CRGBPalette16& pal, unsigned index, uint8_t brightness=255, TBlendType blendType=LINEARBLEND);
+#define ColorFromPalette ColorFromPaletteWLED // override fastled function
 #else
 #include "colorTools.hpp"
 #endif
