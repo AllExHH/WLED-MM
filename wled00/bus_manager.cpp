@@ -1174,6 +1174,7 @@ void BusHub75Matrix::cleanup() {
 #else
   USER_PRINTLN("HUB75 output paused.");
 #endif
+  delay(30); // give some time to finish DMA
 
   _valid = false;
   deallocatePins();
