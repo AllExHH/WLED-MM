@@ -1174,9 +1174,9 @@ void BusHub75Matrix::cleanup() {
 #else
   USER_PRINTLN("HUB75 output paused.");
 #endif
-  delay(30); // give some time to finish DMA
 
   _valid = false;
+  delay(30); // give some time to finish DMA
   deallocatePins();
   _len = 0;
   //if (fourScanPanel != nullptr) delete fourScanPanel;  // warning: deleting object of polymorphic class type 'VirtualMatrixPanel' which has non-virtual destructor might cause undefined behavior
