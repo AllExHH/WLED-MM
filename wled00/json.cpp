@@ -329,6 +329,8 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     uint8_t oldMap1D2D = seg.map1D2D;
     seg.map1D2D = M12_Pixels; // no mapping
     // WLEDMM begin - we need to init segment caches before putting any pixels
+    auto oldLock = suspendStripService; // remember pevious lock status
+    suspendStripService = true;
     if (strip.isServicing()) {
       USER_PRINTLN(F("deserializeSegment() image: strip is still drawing effects."));
       strip.waitUntilIdle();
@@ -350,6 +352,8 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     start = 0, stop = 0;
     set = 0; //0 nothing set, 1 start set, 2 range set
 
+    seg.startFrame();   // WLEDMM do it again, to be sure that all segment properties get cached
+    unsigned seg_len = seg.calc_virtualLength(); // WLEDMM prevent out-of-bounds writing
     for (size_t i = 0; i < iarr.size(); i++) {
       if(iarr[i].is<JsonInteger>()) {
         if (!set) {
@@ -375,12 +379,16 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 
         if (set < 2 || stop <= start) stop = start + 1;
         uint32_t c = gamma32(RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
-        while (start < stop) seg.setPixelColor(start++, c);
+        while (start < stop) {
+          if (unsigned(start) < seg_len) seg.setPixelColor(start, c);  // WLEDMM don't write out-of-bounds
+          start++;
+        }
         set = 0;
       }
     }
     seg.map1D2D = oldMap1D2D; // restore mapping
     strip.trigger(); // force segment update
+    suspendStripService = oldLock; // restore previous lock status
   }
   // send UDP/WS if segment options changed (except selection; will also deselect current preset)
   uint8_t diffresult = seg.differs(prev)  & 0x7F;

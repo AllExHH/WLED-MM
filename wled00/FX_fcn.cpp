@@ -945,8 +945,7 @@ void IRAM_ATTR_YN WLED_O2_ATTR __attribute__((hot)) Segment::setPixelColor(int i
   int vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
 #endif
   i &= 0xFFFF;
-
-  if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
+  if (unsigned(i) >= virtualLength()) return;  // if pixel would fall out of segment just exit //WLEDMM unsigned(i)>SEGLEN also catches "i<0"
 
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
@@ -1914,7 +1913,7 @@ void WS2812FX::service() {
     if(nowUp >= seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))  // WLEDMM ">=" instead of ">"
     {
       if (seg.grouping == 0) seg.grouping = 1; //sanity check
-      if (!seg.freeze) doShow = true;
+      if ((!seg.freeze) || _triggered) doShow = true;   // WLEDMM "triggered" overrules "freeze"
       uint16_t frameDelay = FRAMETIME;    // WLEDMM avoid name clash with "delay" function
 
       if (!seg.freeze) { //only run effect function if not frozen
@@ -1950,6 +1949,8 @@ void WS2812FX::service() {
     }
     _segment_index++;
   }
+  if (_triggered) doShow = true;      // WLEDMM "triggered" always means "show"
+
   _virtualSegmentLength = 0;
   busses.setSegmentCCT(-1);
   if(doShow) {
