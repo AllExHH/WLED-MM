@@ -441,19 +441,20 @@ static void calcInvGammaTable(float gamma)
 {
   float gammaInv = 1.0f / 2.4f;    // surprise surprise: WLED palettes use a fixed gamma of 2.4 !!!
   //float gammaInv = 1.0f / gamma; // if we go by the book, 1.0/gamma will revert gamma corrections
-  for (size_t i = 0; i < 256; i++) {
-    gammaTinv[i] = (int)(powf((float)i / 255.0f, gammaInv) * 255.0f + 0.5f);
+  for (size_t i = 1; i < 256; i++) {
+    gammaTinv[i] = (int)(powf(((float)i - 0.5f) / 255.0f, gammaInv) * 255.0f + 0.5f); // improved by @dedehai
   }
+  gammaTinv[0]=0;
+  gammaTinv[255]=255;
 }
-uint8_t __attribute__((hot)) unGamma8(uint8_t value) {
+IRAM_ATTR_YN uint8_t __attribute__((hot)) unGamma8(uint8_t value) {
   //if (!gammaCorrectCol || (value == 0) || (value == 255)) return value;
-  if ((value == 0) || (value == 255)) return value;
   if ((gammaCorrectVal < 0.999f) || (gammaCorrectVal > 3.0f)) return value;
   if (gammaTinv[255] == 0) calcInvGammaTable(gammaCorrectVal);
   return gammaTinv[value];
 }
 
-uint32_t __attribute__((hot)) unGamma24(uint32_t c) {
+IRAM_ATTR_YN uint32_t __attribute__((hot)) unGamma24(uint32_t c) {
   if ((gammaCorrectVal < 0.999f) || (gammaCorrectVal > 3.0f)) return c;
   if (gammaTinv[255] == 0) calcInvGammaTable(gammaCorrectVal);
   return RGBW32(gammaTinv[R(c)], gammaTinv[G(c)], gammaTinv[B(c)], W(c));
@@ -462,6 +463,8 @@ uint32_t __attribute__((hot)) unGamma24(uint32_t c) {
 
 uint8_t gamma8_cal(uint8_t b, float gamma)
 {
+  if (b==0) return 0;
+  if (b==255) return 255;
   return (int)(powf((float)b / 255.0f, gamma) * 255.0f + 0.5f);
 }
 
@@ -469,9 +472,11 @@ uint8_t gamma8_cal(uint8_t b, float gamma)
 void calcGammaTable(float gamma)
 {
 #if !defined(WLED_USE_CIE_BRIGHTNESS_TABLE)  // WLEDMM not possible when using the CIE table
-  for (uint16_t i = 0; i < 256; i++) {
+  for (uint16_t i = 1; i < 256; i++) {
     gammaT[i] = gamma8_cal(i, gamma);
   }
+  gammaT[0]=0;
+  gammaT[255]=255;
 #endif
   calcInvGammaTable(gamma); // WLEDMM
 }
