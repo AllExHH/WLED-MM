@@ -33,4 +33,4 @@ We welcome contributions to this project! See [contributing](https://github.com/
 
 ## *Disclaimer:*   
 
-Using this software is the users responsibility as it is not bug free. Therefore contributors of this repo are not reliable for anything including but not limited to spontaneous combustion of the entire led strip, the house and the inevitable heat death of the universe
+Using this software is the users responsibility as it is not bug free. Therefore contributors of this repo are not liable for anything including but not limited to spontaneous combustion of the entire led strip, the house and the inevitable heat death of the universe
