@@ -111,9 +111,10 @@ byte renderImageToSegment(Segment &seg) {
   if (strncmp(lastFilename +1, seg.name, 32) != 0) { // segment name changed, load new image
     strncpy(lastFilename +1, seg.name, 32);
     gifDecodeFailed = false;
-    if (strcmp(lastFilename + strlen(lastFilename) - 4, ".gif") != 0) {
+    size_t fnameLen = strlen(lastFilename);
+    if ((fnameLen < 4) || strcmp(lastFilename + strlen(lastFilename) - 4, ".gif") != 0) { // empty segment name, name too short, or name not ending in .gif
       gifDecodeFailed = true;
-      USER_PRINTF("Unsupported format: %s\n", lastFilename);
+      USER_PRINTF("GIF decoder unsupported file: %s\n", lastFilename);
       return IMAGE_ERROR_UNSUPPORTED_FORMAT;
     }
     if (file) file.close();
