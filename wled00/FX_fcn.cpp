@@ -94,7 +94,7 @@ Segment::Segment(const Segment &orig) {
   _t = nullptr;
   if (ledsrgb && !Segment::_globalLeds) {ledsrgb = nullptr; ledsrgbSize = 0;}  // WLEDMM
   if (orig.name) { name = new(std::nothrow) char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
-  if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
+  if (orig.data) { if (allocateData(orig._dataLen, true)) memcpy(data, orig.data, orig._dataLen); }
   //if (orig._t)   { _t = new(std::nothrow) Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
   //else markForReset(); // WLEDMM
   // if (orig.ledsrgb && !Segment::_globalLeds) { allocLeds(); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); } // WLEDMM
@@ -179,7 +179,7 @@ Segment& Segment::operator= (const Segment &orig) {
     if (!Segment::_globalLeds) {ledsrgb = nullptr; ledsrgbSize = 0;};             // WLEDMM copy has no buffers (yet)
     // copy source data
     if (orig.name) { name = new(std::nothrow) char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
-    if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
+    if (orig.data) { if (allocateData(orig._dataLen, true)) memcpy(data, orig.data, orig._dataLen); }
     //if (orig._t)   { _t = new(std::nothrow) Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
     //else markForReset(); // WLEDMM
     //if (orig.ledsrgb && !Segment::_globalLeds) { allocLeds(); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); } // WLEDMM don't copy old buffer
@@ -218,7 +218,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
   return *this;
 }
 
-bool Segment::allocateData(size_t len) {
+bool Segment::allocateData(size_t len, bool allowOverdraft) {  // WLEDMM allowOverdraft for temporary overdraft by segment copy constructor
   // WLEDMM
   if (data && _dataLen >= len) {                          // already allocated enough (reduce fragmentation)
     if ((call == 0) && (len > 0)) memset(data, 0, len);   // erase buffer if called during effect initialisation
@@ -228,9 +228,11 @@ bool Segment::allocateData(size_t len) {
   deallocateData();
   if (len == 0) return false; // nothing to do
   if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) {
-    //USER_PRINTF("Segment::allocateData: Segment data quota exceeded! used:%u request:%u max:%d\n", Segment::getUsedSegmentData(), len, MAX_SEGMENT_DATA);
-    if (len > 0) errorFlag = ERR_LOW_SEG_MEM;  // WLEDMM raise errorflag
-    return false; //not enough memory
+    if (!allowOverdraft || (Segment::getUsedSegmentData() + len > MAX_SEGMENT_OVERDATA)) { // WLEDMM 50% overdraft allowed temporarily
+      //USER_PRINTF("Segment::allocateData: Segment data quota exceeded! used:%u request:%u max:%d\n", Segment::getUsedSegmentData(), len, MAX_SEGMENT_DATA);
+      if (len > 0) errorFlag = ERR_LOW_SEG_MEM;  // WLEDMM raise errorflag
+      return false; //not enough memory
+    }
   }
   // do not use SPI RAM on ESP32 since it is slow
   //#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
@@ -241,12 +243,15 @@ bool Segment::allocateData(size_t len) {
     data = (byte*) malloc(len);
   if (!data) {
       _dataLen = 0; // WLEDMM reset dataLen
+      if ((errorFlag != ERR_LOW_MEM) && (errorFlag != ERR_LOW_SEG_MEM)) { // spam filter
+        USER_PRINT(F("Segment::allocateData: FAILED to allocate ")); 
+        USER_PRINT(len); USER_PRINTLN(F(" bytes."));
+      }
       errorFlag = ERR_LOW_MEM; // WLEDMM raise errorflag
-      USER_PRINT(F("Segment::allocateData: FAILED to allocate ")); 
-      USER_PRINT(len); USER_PRINTLN(F(" bytes."));
       return false;
   } //allocation failed
   Segment::addUsedSegmentData(len);
+  DEBUG_PRINTF("Segment::allocateData: %u bytes allocated (%u used)\n", len, Segment::getUsedSegmentData());
   _dataLen = len;
   memset(data, 0, len);
   if ((errorFlag == ERR_LOW_SEG_MEM) || (errorFlag == ERR_LOW_MEM) || (errorFlag == ERR_NORAM_PX)) errorFlag = ERR_NONE; // WLEDMM reset errorflag on success
@@ -254,10 +259,17 @@ bool Segment::allocateData(size_t len) {
 }
 
 void Segment::deallocateData() {
-  if (!data) {_dataLen = 0; return;}  // WLEDMM reset dataLen
+  if (!data) {
+    if (_dataLen>0) {
+      Segment::addUsedSegmentData(-_dataLen); // WLEDMM fix housekeeping
+      DEBUG_PRINTF("Segment::deallocateData unregistering %u bytes as unused.", _dataLen);
+    }
+    _dataLen = 0;
+    return;
+  }  // WLEDMM reset dataLen
   free(data);
   data = nullptr;
-  //USER_PRINTF("Segment::deallocateData: free'd   %d bytes.\n", _dataLen);
+  DEBUG_PRINTF("Segment::deallocateData: free'd   %d bytes.\n", _dataLen);
   Segment::addUsedSegmentData(-_dataLen);
   _dataLen = 0;
 }

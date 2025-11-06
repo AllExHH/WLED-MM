@@ -87,6 +87,8 @@ extern BusManager busses; // same as wled.h
   #endif
 #endif
 
+#define MAX_SEGMENT_OVERDATA ((MAX_SEGMENT_DATA) + (MAX_SEGMENT_DATA)/2) // WLEDMM 50% extra overdraft budget
+
 /* How much data bytes each segment should max allocate to leave enough space for other segments,
   assuming each segment uses the same amount of data. 256 for ESP8266, 640 for ESP32. */
 #define FAIR_DATA_PER_SEG (MAX_SEGMENT_DATA / strip.getMaxSegments())
@@ -611,7 +613,7 @@ typedef struct Segment {
     inline uint8_t  getLightCapabilities(void) const { return _capabilities; }
 
     static size_t   getUsedSegmentData(void)    { return _usedSegmentData; } // WLEDMM size_t
-    static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
+    static void     addUsedSegmentData(int len) { _usedSegmentData = max(0, int(_usedSegmentData + len)); }  // WLEDMM prevent negative alloc
 
     void    allocLeds(); //WLEDMM
     inline static const CRGBPalette16 &getCurrentPalette(void) { return Segment::_currentPalette; }
@@ -628,7 +630,7 @@ typedef struct Segment {
 
     // runtime data functions
     inline size_t dataSize(void) const { return _dataLen; }
-    bool allocateData(size_t len);
+    bool allocateData(size_t len, bool allowOverdraft = false);
     void deallocateData(void);
     void resetIfRequired(void);
     void startFrame(void); // cache a few values that don't change while an effect is drawing
