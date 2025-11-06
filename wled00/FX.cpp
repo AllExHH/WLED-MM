@@ -4693,9 +4693,11 @@ static const char _data_FX_MODE_WASHING_MACHINE[] PROGMEM = "Washing Machine@!,!
   Draws a .gif image from filesystem on the matrix/strip
 */
 uint16_t mode_image(void) {
+  if (!strip.isMatrix) return mode_oops(); // not a 2D set-up
   #ifndef WLED_ENABLE_GIF
   return mode_oops();
   #else
+  if (max(SEGMENT.virtualWidth(),SEGMENT.virtualHeight()) < 4) return mode_oops(); // too small
   renderImageToSegment(SEGMENT);
   return FRAMETIME;
   #endif
@@ -4704,7 +4706,7 @@ uint16_t mode_image(void) {
   //   Serial.println(status);
   // }
 }
-static const char _data_FX_MODE_IMAGE[] PROGMEM = "Image@!,;;;12;sx=128";
+static const char _data_FX_MODE_IMAGE[] PROGMEM = "Image@!,Blur,;;;12;sx=128,ix=0";
 
 /*
   Blends random colors across palette
