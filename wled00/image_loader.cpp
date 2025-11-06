@@ -158,6 +158,12 @@ byte renderImageToSegment(Segment &seg) {
   if (millis() - lastFrameDisplayTime < wait) return IMAGE_ERROR_WAITING;
 
   decoder.getSize(&gifWidth, &gifHeight);
+  // bad gif size: prevent division by zero
+  if (gifWidth == 0 || gifHeight == 0) {
+    gifDecodeFailed = true;
+    USER_PRINTF("Invalid GIF dimensions: %dx%d\n", gifWidth, gifHeight);
+    return IMAGE_ERROR_GIF_DECODE;
+  }
   // softhack007: pre-calculate upscaling for speedup
   expandX = (seg_cols+(gifWidth-1)) / gifWidth;
   expandY = (seg_rows+(gifHeight-1)) / gifHeight;
