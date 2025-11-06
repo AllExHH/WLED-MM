@@ -131,7 +131,18 @@ byte renderImageToSegment(Segment &seg) {
     decoder.setFileReadCallback(fileReadCallback);
     decoder.setFileReadBlockCallback(fileReadBlockCallback);
     decoder.setFileSizeCallback(fileSizeCallback);
+#if __cpp_exceptions // use exception handler if we can (some targets don't support exceptions)
+    try {            
+#endif
     decoder.alloc(); // WLEDMM this function may throw out-of memory and cause a crash
+#if __cpp_exceptions
+    } catch (...) {  // if we arrive here, the decoder has thrown an OOM exception
+      gifDecodeFailed = true;
+      errorFlag = ERR_NORAM_PX;
+      USER_PRINTLN("\nGIF decoder out of memory. I'm going to shoot myself now.\n");
+      return IMAGE_ERROR_DECODER_ALLOC;
+    }
+#endif
 
     DEBUG_PRINTLN(F("Starting decoding"));
     int derr = 0;
