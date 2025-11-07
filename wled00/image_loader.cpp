@@ -142,7 +142,8 @@ byte renderImageToSegment(Segment &seg) {
     } catch (...) {  // if we arrive here, the decoder has thrown an OOM exception
       gifDecodeFailed = true;
       errorFlag = ERR_NORAM_PX;
-      USER_PRINTLN("\nGIF decoder out of memory. I'm going to shoot myself now.\n");
+      USER_PRINTLN("\nGIF decoder out of memory. Please try a smaller image file.\n");
+      //USER_PRINTLN("I'm going to shoot myself now.");
       return IMAGE_ERROR_DECODER_ALLOC;
     }
 #endif
