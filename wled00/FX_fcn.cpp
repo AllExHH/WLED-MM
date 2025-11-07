@@ -1765,8 +1765,8 @@ void WS2812FX::enumerateLedmaps() {
   uint8_t segment_index = 0;
   for (segment &seg : _segments) {
     if (seg.name != nullptr && strlen(seg.name) > 0) {
-      char fileName[33];
-      snprintf_P(fileName, sizeof(fileName), PSTR("/lm%s.json"), seg.name);
+      char fileName[33+11] = { '\0' }; // segment name is 32 chars max, so we need 43 chars in worst case
+      snprintf_P(fileName, sizeof(fileName)-1, PSTR("/lm%s.json"), seg.name);
       bool isFile = WLED_FS.exists(fileName);
       if (isFile) ledMaps |= 1 << (10+segment_index);
     }
