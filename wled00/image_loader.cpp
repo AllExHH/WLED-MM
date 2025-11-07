@@ -49,8 +49,9 @@ bool openGif(const char *filename) {  // side-effect: updates "file"
 
 static Segment* activeSeg;
 static uint16_t gifWidth, gifHeight;  // these two must stay uint16_t, because they are passed by reference
-static unsigned seg_cols = 1;
-static unsigned seg_rows = 1;
+static unsigned segCols = 1;
+static unsigned segRows = 1;
+//static unsigned segLen = 1; // for future 1D support
 static int expandX = 1;
 static int expandY = 1;
 static int lastX = -1, lastY = -1;
@@ -69,12 +70,11 @@ void updateScreenCallback(void) {
   }
   lastX = lastY = -1; // invalidate last position
 }
-void drawPixelCallback(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue) {
+void draw2DPixelCallback(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue) {
   // simple nearest-neighbor downscaling
-  int outY = y * seg_rows / gifHeight;
-  int outX = x * seg_cols / gifWidth;
-
-  if ((unsigned(outX) >= seg_cols) || (unsigned(outY) >= seg_rows)) return; // out of range
+  int outY = y * segRows / gifHeight;
+  int outX = x * segCols / gifWidth;
+  if ((unsigned(outX) >= segCols) || (unsigned(outY) >= segRows)) return; // out of range
   if ((lastX == outX) && (lastY == outY)) return;                           // downscaling optimization: skip re-painting same pixel
   lastX = outX; lastY = outY;
 
@@ -105,8 +105,9 @@ byte renderImageToSegment(Segment &seg) {
   // TODO: if (seg.mode != seg.currentMode()) return IMAGE_ERROR_WAITING;
   if (activeSeg && activeSeg != &seg) return IMAGE_ERROR_SEG_LIMIT; // only one segment at a time
   activeSeg = &seg;
-  seg_cols = activeSeg->virtualWidth();
-  seg_rows = activeSeg->virtualHeight();
+  segCols = activeSeg->virtualWidth();
+  segRows = activeSeg->virtualHeight();
+  // segLen = activeSeg->virtualLength(); // for future 1D and expand1D support
 
   if (strncmp(lastFilename +1, seg.name, 32) != 0) { // segment name changed, load new image
     strncpy(lastFilename +1, seg.name, 32);
@@ -126,7 +127,7 @@ byte renderImageToSegment(Segment &seg) {
     }
     decoder.setScreenClearCallback(screenClearCallback);
     decoder.setUpdateScreenCallback(updateScreenCallback);
-    decoder.setDrawPixelCallback(drawPixelCallback);
+    decoder.setDrawPixelCallback(draw2DPixelCallback);
     decoder.setFileSeekCallback(fileSeekCallback);
     decoder.setFilePositionCallback(filePositionCallback);
     decoder.setFileReadCallback(fileReadCallback);
@@ -177,8 +178,8 @@ byte renderImageToSegment(Segment &seg) {
     return IMAGE_ERROR_GIF_DECODE;
   }
   // softhack007: pre-calculate upscaling for speedup
-  expandX = (seg_cols+(gifWidth-1)) / gifWidth;
-  expandY = (seg_rows+(gifHeight-1)) / gifHeight;
+  expandX = (segCols+(gifWidth-1)) / gifWidth;
+  expandY = (segRows+(gifHeight-1)) / gifHeight;
 
   int result = decoder.decodeFrame(false);
   if (result < 0) {
