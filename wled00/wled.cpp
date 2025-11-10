@@ -886,6 +886,11 @@ void WLED::setup()
 #endif
 
   USER_PRINT(F("Free heap ")); USER_PRINTLN(ESP.getFreeHeap());USER_PRINTLN();
+
+  // WLEDMM force initial calculation of gamma correction LUT
+  if ((gammaCorrectVal < 0.999f) || (gammaCorrectVal > 3.0f)) calcGammaTable(1.0f); // no gamma => create linear LUT
+  else calcGammaTable(gammaCorrectVal);
+
   USER_PRINTLN(F("WLED initialization done.\n"));
   delay(50);
   // repeat Ada prompt

@@ -253,6 +253,7 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
     }
   #endif
 
+  (void) unGamma8(127); // WLEDMM dummy call, just to make sure that gammaTinv is initialized, so we can use fast_unGamma8
   uint8_t stripBrightness = strip.getBrightness();
   for (size_t i = 0; pos < bufSize -2; i += n)
   {
@@ -268,9 +269,9 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
     if (gammaCorrectPreview) {
       uint8_t w = W(c);  // not sure why, but it looks better if using "white" without corrections
       if (w>0) c = color_add(c, RGBW32(w, w, w, 0), false); // add white channel to RGB channels - color_add() will prevent over-saturation
-      buffer[pos++] = unGamma8(R(c)); //R
-      buffer[pos++] = unGamma8(G(c)); //G
-      buffer[pos++] = unGamma8(B(c)); //B
+      buffer[pos++] = fast_unGamma8(R(c)); //R
+      buffer[pos++] = fast_unGamma8(G(c)); //G
+      buffer[pos++] = fast_unGamma8(B(c)); //B
     } else {
     // WLEDMM end
       uint8_t w = W(c);  // WLEDMM small optimization

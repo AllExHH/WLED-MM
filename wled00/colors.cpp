@@ -392,7 +392,7 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb) {
 
 #if !defined(WLED_USE_CIE_BRIGHTNESS_TABLE)
 //gamma 2.8 lookup table used for color correction
-static byte gammaT[256] = {
+byte DRAM_ATTR_YN gammaT[256] = {  // WLEDMM: DRAM_ATTR to ensure that this table is in RAM (faster)
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
@@ -415,7 +415,7 @@ static byte gammaT[256] = {
 // https://github.com/Aircoookie/WLED/issues/2767#issuecomment-1310961308
 // unfortunately NeoPixelBus has its own internal table, that kills low brightness values similar to the original WLED table.
 //   see https://github.com/Makuna/NeoPixelBus/blob/master/src/internal/NeoGamma.h
-static const byte gammaT[256] = {
+const DRAM_ATTR_YN byte gammaT[256] = {  // WLEDMM make sure this table is in RAM (faster)
   0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 
   2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4,
   4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 
@@ -436,7 +436,7 @@ static const byte gammaT[256] = {
 #endif
 
 // WLEDMM begin
-static uint8_t gammaTinv[256] = { 0 };
+uint8_t DRAM_ATTR_YN gammaTinv[256] = { 0 };
 static void calcInvGammaTable(float gamma)
 {
   float gammaInv = 1.0f / 2.4f;    // surprise surprise: WLED palettes use a fixed gamma of 2.4 !!!
@@ -448,9 +448,8 @@ static void calcInvGammaTable(float gamma)
   gammaTinv[255]=255;
 }
 IRAM_ATTR_YN uint8_t __attribute__((hot)) unGamma8(uint8_t value) {
-  //if (!gammaCorrectCol || (value == 0) || (value == 255)) return value;
-  if ((gammaCorrectVal < 0.999f) || (gammaCorrectVal > 3.0f)) return value;
   if (gammaTinv[255] == 0) calcInvGammaTable(gammaCorrectVal);
+  //if ((gammaCorrectVal < 0.999f) || (gammaCorrectVal > 3.0f)) return value; // WLEDMM yes, looks stupid
   return gammaTinv[value];
 }
 
@@ -482,13 +481,13 @@ void calcGammaTable(float gamma)
 }
 
 // used for individual channel or brightness gamma correction
-IRAM_ATTR_YN __attribute__((hot)) uint8_t gamma8(uint8_t b)   // WLEDMM added IRAM_ATTR_YN
+IRAM_ATTR_YN __attribute__((hot)) uint8_t gamma8_slow(uint8_t b)   // WLEDMM added IRAM_ATTR_YN
 {
   return gammaT[b];
 }
 
 // used for color gamma correction
-uint32_t __attribute__((hot)) gamma32(uint32_t color)
+IRAM_ATTR_YN uint32_t __attribute__((hot)) gamma32(uint32_t color)
 {
   if (!gammaCorrectCol) return color;
   uint8_t w = W(color);

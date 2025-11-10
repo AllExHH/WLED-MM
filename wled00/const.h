@@ -594,8 +594,10 @@
 //         error only in MM, not in upstream... tbd: find out why
 #ifdef ARDUINO_ARCH_ESP32
   #define IRAM_ATTR_YN IRAM_ATTR
+  #define DRAM_ATTR_YN DRAM_ATTR
 #else
   #define IRAM_ATTR_YN
+  #define DRAM_ATTR_YN 
 #endif
 
 #define WLED_O2_ATTR __attribute__((optimize("O2")))

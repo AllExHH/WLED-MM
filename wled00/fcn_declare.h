@@ -78,10 +78,16 @@ uint16_t __attribute__((const)) approximateKelvinFromRGB(uint32_t rgb);         
 void setRandomColor(byte* rgb);
 uint8_t gamma8_cal(uint8_t b, float gamma);
 void calcGammaTable(float gamma);
-uint8_t __attribute__((pure)) gamma8(uint8_t b);                                              // WLEDMM: added attribute pure
+uint8_t __attribute__((pure)) gamma8_slow(uint8_t b);                                         // WLEDMM: added attribute pure
 uint32_t __attribute__((pure)) gamma32(uint32_t);                                             // WLEDMM: added attribute pure
 uint8_t unGamma8(uint8_t value);                                                              // WLEDMM revert gamma correction
 uint32_t unGamma24(uint32_t c);                                                               // WLEDMM for 24bit color (white left as-is)
+
+// WLEDMM: speedup - inline function for gamma correction
+extern uint8_t gammaTinv[256]; // colors.cpp
+extern uint8_t gammaT[256];    // colors.cpp
+inline uint8_t gamma8(uint8_t value) { return gammaT[value];}           // WLEDMM inlined for speed
+inline uint8_t fast_unGamma8(uint8_t value) { return gammaTinv[value];}
 
 //dmx_output.cpp
 void initDMXOutput();
