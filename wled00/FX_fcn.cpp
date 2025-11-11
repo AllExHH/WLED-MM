@@ -2564,7 +2564,7 @@ void WS2812FX::loadCustomPalettes() {
 bool WS2812FX::deserializeMap(uint8_t n) {
   // 2D support creates its own ledmap (on the fly) if a ledmap.json exists it will overwrite built one.
 
-  char fileName[32] = {'\0'};
+  char fileName[42] = {'\0'}; // WLEDMM we need at least 32 + 7 bytes
   //WLEDMM: als support segment name ledmaps
   bool isFile = false;;
   if (n<10) {
@@ -2576,7 +2576,8 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     uint8_t segment_index = 0;
     for (segment &seg : _segments) {
       if (n == 10 + segment_index && !isFile && seg.name != nullptr) {
-        sprintf_P(fileName, PSTR("/%s.json"), seg.name);
+        snprintf_P(fileName, sizeof(fileName) -1, PSTR("/%s.json"), seg.name);
+        fileName[sizeof(fileName) -1] = '\0';
         isFile = WLED_FS.exists(fileName);
       }
       if (isFile) break;
@@ -2618,13 +2619,13 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     //WLEDMM: read width and height
     memset(fileName, 0, sizeof(fileName));              // clear old buffer - readBytesUntil() does not terminate strings !!!
     f.find("\"width\":");
-    f.readBytesUntil('\n', fileName, sizeof(fileName)); //hack: use fileName as we have this allocated already
+    f.readBytesUntil('\n', fileName, sizeof(fileName)-1); //hack: use fileName as we have this allocated already
     uint16_t maxWidth = atoi(cleanUpName(fileName));
     //DEBUG_PRINTF(" (\"width\": %s) ", fileName)
 
     memset(fileName, 0, sizeof(fileName));              // clear old buffer
     f.find("\"height\":");
-    f.readBytesUntil('\n', fileName, sizeof(fileName));
+    f.readBytesUntil('\n', fileName, sizeof(fileName)-1);
     uint16_t maxHeight = atoi(cleanUpName(fileName));
     //DEBUG_PRINTF(" (\"height\": %s) \n", fileName)
 
@@ -2661,6 +2662,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
         errorFlag = ERR_LOW_MEM; // WLEDMM raise errorflag
       }
     }
+    if ((errorFlag == ERR_LOW_MEM) && (size > 0) && (customMappingTable != nullptr)) errorFlag == ERR_NONE;  // reset error flag
     if (customMappingTable != nullptr) customMappingTableSize = size;
   }
 
@@ -2677,7 +2679,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
       int mapi = f.readStringUntil(',').toInt();
       // USER_PRINTF(", %d(%d)", mapi, i);
       if (i < customMappingSize) customMappingTable[i++] = (uint16_t) (mapi<0 ? 0xFFFFU : mapi);  // WLEDMM do not write past array bounds
-    } while (f.available());
+    } while (f.available() && (i < customMappingSize));
 
     loadedLedmap = n;
     f.close();
@@ -2692,6 +2694,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     #endif
   } else { // memory allocation error
     customMappingTableSize = 0;
+    errorFlag = ERR_LOW_MEM; // WLEDMM raise errorflag
     USER_PRINTLN(F("Deserializemap: Ledmap alloc error."));
     USER_FLUSH();
   }
