@@ -687,7 +687,7 @@ struct XandY {
   uint8_t y;
 };
 struct ArrayAndSize {
-  uint8_t size;
+  uint16_t size;
   XandY *array;
 };
 class JMapC {
@@ -727,7 +727,7 @@ class JMapC {
     }
     uint32_t getPixelColor(uint16_t i) {
       updatejMapDoc();
-      if (jVectorMap.size() > 0)
+      if (jVectorMap.size() > i)  // implies jVectorMap.size() > 0, because i is unsigned
         return SEGMENT.getPixelColorXY(jVectorMap[i].array[0].x * scale, jVectorMap[i].array[0].y * scale);
       else
         return 0;
@@ -735,7 +735,7 @@ class JMapC {
   private:
     std::vector<ArrayAndSize> jVectorMap; 
     StaticJsonDocument<4096> docChunk; //must fit forks with about 32 points each
-    uint8_t scale;
+    uint8_t scale=1;
 
     void updatejMapDoc() {
       if (SEGMENT.name == nullptr && jVectorMap.size() > 0) {
@@ -745,7 +745,7 @@ class JMapC {
         uint32_t dataSize = 0;
         deletejVectorMap();
         DEBUG_PRINT("New "); DEBUG_PRINTLN(SEGMENT.name);
-        char jMapFileName[50];
+        char jMapFileName[50] = {'\0'}; // we need at most 32 + 7 bytes
         strcpy(jMapFileName, "/");
         strcat(jMapFileName, SEGMENT.name);
         strcat(jMapFileName, ".json");
@@ -765,7 +765,10 @@ class JMapC {
           {
             USER_PRINTF("deserializeJson() of parseTree failed with code %s\n", err.c_str());
             USER_FLUSH();
-            if (SEGMENT.name) delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded // softhack007 avoid deleting nullptr
+            // softhack007: DO NOT delete SEGMENT.name - it's owned by Segment class, deleting it from outside can lead to use-after-free
+            // if (SEGMENT.name) delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded // softhack007 avoid deleting nullptr
+            strlcpy(previousSegmentName, SEGMENT.name, sizeof(previousSegmentName)); // Mark name as processed to avoid reload loop
+            if (jMapFile) jMapFile.close();  // make sure the file is closed
             return;
           }
 
