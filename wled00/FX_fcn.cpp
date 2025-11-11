@@ -2662,7 +2662,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
         errorFlag = ERR_LOW_MEM; // WLEDMM raise errorflag
       }
     }
-    if ((errorFlag == ERR_LOW_MEM) && (size > 0) && (customMappingTable != nullptr)) errorFlag == ERR_NONE;  // reset error flag
+    if ((errorFlag == ERR_LOW_MEM) && (size > 0) && (customMappingTable != nullptr)) errorFlag = ERR_NONE;  // reset error flag
     if (customMappingTable != nullptr) customMappingTableSize = size;
   }
 
