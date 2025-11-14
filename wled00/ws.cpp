@@ -7,17 +7,13 @@
 
 static volatile uint16_t wsLiveClientId = 0;        // WLEDMM added "static"
 static volatile unsigned long wsLastLiveTime = 0;   // WLEDMM
+//uint8_t* wsFrameBuffer = nullptr;
 
 // define some constants for binary protocols, dont use defines but C++ style constexpr
 constexpr uint8_t BINARY_PROTOCOL_GENERIC = 0xFF; // generic / auto detect NOT IMPLEMENTED
 constexpr uint8_t BINARY_PROTOCOL_E131    = P_E131; // = 0, untested!
 constexpr uint8_t BINARY_PROTOCOL_ARTNET  = P_ARTNET; // = 1, untested!
 constexpr uint8_t BINARY_PROTOCOL_DDP     = P_DDP; // = 2
-
-uint16_t wsLiveClientId = 0;
-unsigned long wsLastLiveTime = 0;
-
-//uint8_t* wsFrameBuffer = nullptr;
 
 #if !defined(ARDUINO_ARCH_ESP32) || defined(WLEDMM_FASTPATH)   // WLEDMM
 #define WS_LIVE_INTERVAL_MAX 120
@@ -84,7 +80,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           // force broadcast in 500ms after updating client
           //lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500); // ESP8266 does not like this
         }
-      }else if (info->opcode == WS_BINARY) {
+      } else if (info->opcode == WS_BINARY) {
         // first byte determines protocol. Note: since e131_packet_t is "packed", the compiler handles alignment issues
         //DEBUG_PRINTF_P(PSTR("WS binary message: len %u, byte0: %u\n"), len, data[0]);
         int offset = 1; // offset to skip protocol byte
@@ -106,7 +102,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
       }
     } else {
-      DEBUG_PRINTF_P(PSTR("WS multipart message: final %u index %u len %u total %u\n"), info->final, info->index, len, (uint32_t)info->len);
+      DEBUG_PRINTF("WS multipart message: final %u index %u len %u total %u\n", info->final, info->index, len, (uint32_t)info->len);
       //message is comprised of multiple frames or the frame is split into multiple packets
       //if(info->index == 0){
         //if (!wsFrameBuffer && len < 4096) wsFrameBuffer = new uint8_t[4096];
