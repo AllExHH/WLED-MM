@@ -714,9 +714,9 @@ WLED_GLOBAL uint16_t olen _INIT(0);
 // General filesystem
 WLED_GLOBAL size_t fsBytesUsed _INIT(0);
 WLED_GLOBAL size_t fsBytesTotal _INIT(0);
-WLED_GLOBAL unsigned long presetsModifiedTime _INIT(0L);
+WLED_GLOBAL volatile unsigned long presetsModifiedTime _INIT(0L);
 WLED_GLOBAL JsonDocument* fileDoc;
-WLED_GLOBAL bool doCloseFile _INIT(false);
+WLED_GLOBAL volatile bool doCloseFile _INIT(false);
 
 // presets
 WLED_GLOBAL byte currentPreset _INIT(0);

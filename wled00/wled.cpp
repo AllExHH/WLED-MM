@@ -99,7 +99,11 @@ void WLED::reset()
   #endif
   long dly = millis();
   while (millis() - dly < 450) {
+#ifdef ARDUINO_ARCH_ESP32
+    delay(2);       // yield => BS
+#else
     yield();        // enough time to send response to client
+#endif
   }
   applyBri();
   USER_PRINTLN(F("\nWLED RESTART\n"));
@@ -191,6 +195,9 @@ void WLED::loop()
     reset();
 
   if (doCloseFile) {
+#ifdef ARDUINO_ARCH_ESP32
+    delay(0);       // yield => BS
+#endif
     closeFile();
     yield();
   }
@@ -203,7 +210,11 @@ void WLED::loop()
     #endif
     handleNightlight();
     handlePlaylist();
+#ifdef ARDUINO_ARCH_ESP32
+    delay(0);       // yield => BS
+#else
     yield();
+#endif
 
     #ifndef WLED_DISABLE_HUESYNC
     handleHue();
@@ -211,7 +222,11 @@ void WLED::loop()
     #endif
 
     handlePresets();
+#ifdef ARDUINO_ARCH_ESP32
+    delay(0);       // yield => BS
+#else
     yield();
+#endif
 
 #if defined(_MoonModules_WLED_) && defined(WLEDMM_FASTPATH)
     #ifdef WLED_DEBUG
