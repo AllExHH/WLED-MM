@@ -56,6 +56,8 @@ void closeFile() {
   while(strip.isUpdating() && (millis() - t_wait < 96)) delay(0); //        try harder
   //if (strip.isUpdating()) USER_PRINTLN("closeFile: strip still updating.");
   delay(2); // might help
+  #else
+    bool oldLock = suspendStripService; // fix build f***u* on 8266
   #endif
   #ifdef WLED_DEBUG_FS
     DEBUGFS_PRINT(F("Close -> "));
