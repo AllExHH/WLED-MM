@@ -8,7 +8,10 @@
 #include "FX.h"
 #include "palettes.h"
 #ifdef ARDUINO_ARCH_ESP32
-#include <esp_timer.h>     // WLEDMM to get esp_timer_get_time() 
+#include <esp_timer.h>     // WLEDMM to get esp_timer_get_time()
+#include "freertos/FreeRTOS.h"
+#include "freertos/portmacro.h"
+static portMUX_TYPE s_wled_strip_mux = portMUX_INITIALIZER_UNLOCKED; // to protect deleting Segment::_globalLeds
 #endif
 
 /*
@@ -953,7 +956,9 @@ static void xyFromBlock(uint16_t &x,uint16_t &y, uint16_t i, uint16_t vW, uint16
     x = vW / 2 - vStrip - 1;
     y = vH / 2 + vStrip - i2 * vStrip * 2;
   }
-
+  // softhack007 not sure if clamping is necessary
+  //x = min(x, uint16_t(vW-1)); // clamp x at vW-1  
+  //y = min(y, uint16_t(vH-1)); // clamp y at vH-1
 }
 
 void IRAM_ATTR_YN WLED_O2_ATTR __attribute__((hot)) Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATTR conditionally
@@ -1847,9 +1852,19 @@ void WS2812FX::finalizeInit(void)
 
   //initialize leds array. TBD: realloc if nr of leds change
   if (Segment::_globalLeds) {
+    // DONG - Valkyrie is about to die
+    // this is a critical section that will be removed with PR #278 which removes _globalLeds
+    // problem: suspendStripService provides interlocking, but there’s a window before service() observes it, 
+    //          and ESP32 is dual-core. A critical section closes that window so the pointer swap is atomic across cores.
+#if defined(ARDUINO_ARCH_ESP32)
+    taskENTER_CRITICAL(&s_wled_strip_mux);
+#endif
     free(Segment::_globalLeds);
     Segment::_globalLeds = nullptr;
     purgeSegments(true);   // WLEDMM moved here, because it seems to improve stability.
+#if defined(ARDUINO_ARCH_ESP32)
+    taskEXIT_CRITICAL(&s_wled_strip_mux);
+#endif
   }
   if (useLedsArray && getLengthTotal()>0) { // WLEDMM avoid malloc(0)
     size_t arrSize = sizeof(CRGB) * getLengthTotal();

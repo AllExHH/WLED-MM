@@ -101,7 +101,7 @@ void WS2812FX::setUpMatrix() {
       // content of the file is just raw JSON array in the form of [val1,val2,val3,...]
       // there are no other "key":"value" pairs in it
       // allowed values are: -1 (missing pixel/no LED attached), 0 (inactive/unused pixel), 1 (active/used pixel)
-      char    fileName[32]; strcpy_P(fileName, PSTR("/2d-gaps.json")); // reduce flash footprint
+      char    fileName[32]; strcpy_P(fileName, PSTR("/2d-gaps.json")); // reduce flash footprint //WLEDMM you sure?
       bool    isFile = WLED_FS.exists(fileName);
       size_t  gapSize = 0;
       int8_t *gapTable = nullptr;
@@ -842,11 +842,11 @@ void Segment::drawArc(unsigned x0, unsigned y0, int radius, uint32_t color, uint
 //WLEDMM for artifx
 bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
   if (!isActive()) return true; // segment not active, nothing to do
-  char fileName[32] = { '\0' };
+  char fileName[42] = { '\0' }; // we need up to 40 bytes (seg.name is 32 bytes max)
   //WLEDMM: als support segment name ledmaps
   bool isFile = false;
   // strcpy_P(fileName, PSTR("/mario"));
-  snprintf(fileName, sizeof(fileName), "/%s%d.json", name, fileNr); //WLEDMM: trick to not include 0 in ledmap.json
+  snprintf(fileName, sizeof(fileName)-1, "/%s%d.json", name, fileNr); //WLEDMM: trick to not include 0 in ledmap.json
   // strcat(fileName, ".json");
   isFile = WLED_FS.exists(fileName);
 
@@ -928,7 +928,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
 
     for (int j = 0; j<w; j++) { // character width
       int16_t x0 = x + (w-1) - j;
-      if ((x0 >= 0) || (x0 < cols)) {
+      if (unsigned(x0) < cols) { // WLEDMM same as "x0 > 0 && x0 < cols"
         if ((bits>>(j+(8-w))) & 0x01) { // bit set & drawing on-screen
         setPixelColorXY(x0, y0, fgCol);
         } else {
