@@ -131,10 +131,13 @@ def conditional_usb_mode(env):
         has_cdc_boot = has_cdc_on_boot_enabled(env)
         
         if has_usb_mode and has_cdc_boot:
-            print("Development build detected - keeping ARDUINO_USB_MODE=1 for debugging")
+            print("Development build detected - keeping ARDUINO_USB_MODE=1 for USB-OTG debugging")
             # Warning in orange/yellow using ANSI color codes
             print("\033[93m  WARNING: This build is NOT suitable for production devices!\033[0m")
             print("\033[93m  Production builds require WLED_RELEASE=True environment variable.\033[0m")
+        elif has_cdc_boot:
+            # CDC_ON_BOOT=1 present but not USB_MODE=1 
+            print("Development build detected -  USB-OTG enabled, but ARDUINO_USB_MODE=1 missing for debugging.")
         elif has_usb_mode:
             # USB_MODE=1 present but not CDC_ON_BOOT=1 (UART-to-USB board)
             print("Development build detected - board has UART-to-USB chip")
