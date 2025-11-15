@@ -40,6 +40,28 @@ def has_cdc_on_boot_enabled(env):
     
     return False
 
+def has_usb_mode_enabled(env):
+    """
+    Check if ARDUINO_USB_MODE is set to 1 in the build configuration.
+    
+    Returns True if USB_MODE=1, False otherwise.
+    """
+    cpp_defines = env.get('CPPDEFINES', [])
+    build_flags = env.get('BUILD_FLAGS', [])
+    
+    # Check in CPPDEFINES
+    for define in cpp_defines:
+        if isinstance(define, (list, tuple)) and len(define) == 2:
+            if define[0] == 'ARDUINO_USB_MODE' and define[1] == '1':
+                return True
+    
+    # Check in raw build flags
+    for flag in build_flags:
+        if isinstance(flag, str) and 'ARDUINO_USB_MODE=1' in flag:
+            return True
+    
+    return False
+
 def conditional_usb_mode(env):
     """
     Conditionally set ARDUINO_USB_MODE based on build context.
@@ -104,7 +126,19 @@ def conditional_usb_mode(env):
             env.Replace(BUILD_FLAGS=new_build_flags)
             
     else:
-        print("Development build detected - keeping ARDUINO_USB_MODE=1 for debugging")
+        # Development build
+        has_usb_mode = has_usb_mode_enabled(env)
+        has_cdc_boot = has_cdc_on_boot_enabled(env)
+        
+        if has_usb_mode and has_cdc_boot:
+            print("Development build detected - keeping ARDUINO_USB_MODE=1 for debugging")
+            # Warning in orange/yellow using ANSI color codes
+            print("\033[93m  WARNING: This build is NOT suitable for production devices!\033[0m")
+            print("\033[93m  Production builds require WLED_RELEASE=True environment variable.\033[0m")
+        elif has_usb_mode:
+            # USB_MODE=1 present but not CDC_ON_BOOT=1 (UART-to-USB board)
+            print("Development build detected - board has UART-to-USB chip")
+        # If neither flag is present, don't print anything
 
 # Apply the conditional USB mode logic
 conditional_usb_mode(env)
