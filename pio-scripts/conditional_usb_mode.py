@@ -13,6 +13,7 @@ CRITICAL: This change only applies to boards with USB-OTG (ARDUINO_USB_CDC_ON_BO
 For boards with classical UART-to-USB chips (ARDUINO_USB_CDC_ON_BOOT=0), 
 ARDUINO_USB_MODE=1 is harmless and left unchanged.
 """
+## This script was created with the help of an AI, reviewed and tested by @softhack007
 
 Import('env')
 import os
@@ -80,11 +81,11 @@ def conditional_usb_mode(env):
     if is_release_build:
         # Check if this board uses USB-OTG (CDC_ON_BOOT=1)
         if not has_cdc_on_boot_enabled(env):
-            print("WLED Release build detected - board has UART-to-USB chip (CDC_ON_BOOT=0)")
+            print("WLED Release build detected - board uses UART-to-USB chip (CDC_ON_BOOT=0)")
             print("  Keeping ARDUINO_USB_MODE=1 (harmless for UART-to-USB boards)")
             return
         
-        print("WLED Release build detected - board has USB-OTG (CDC_ON_BOOT=1)")
+        print("WLED Release build detected - board uses USB-OTG (CDC_ON_BOOT=1)")
         print("  Setting ARDUINO_USB_MODE=0 for production")
         
         # Check if ARDUINO_USB_MODE=1 is present
@@ -107,10 +108,10 @@ def conditional_usb_mode(env):
             print("\033[93m  Production builds require WLED_RELEASE=True environment variable.\033[0m")
         elif has_cdc_boot:
             # CDC_ON_BOOT=1 present but not USB_MODE=1 
-            print("Development build detected -  USB-OTG enabled, but ARDUINO_USB_MODE=1 missing for debugging.")
+            print("Development build detected - USB-OTG enabled, but ARDUINO_USB_MODE=1 missing for debugging")
         elif has_usb_mode:
             # USB_MODE=1 present but not CDC_ON_BOOT=1 (UART-to-USB board)
-            print("Development build detected - board has UART-to-USB chip")
+            print("Development build detected - board uses UART-to-USB chip")
         # If neither flag is present, don't print anything
 
 # Apply the conditional USB mode logic
