@@ -2,9 +2,9 @@
 """
 Conditional USB Mode Script for WLED-MM
 
-This script automatically sets ARDUINO_USB_MODE based on the build context:
+This script automatically manages ARDUINO_USB_MODE based on the build context:
 - For development builds: ARDUINO_USB_MODE=1 (allows USB debugging)  
-- For release builds (CI): ARDUINO_USB_MODE=0 (allows normal boot without USB debugger)
+- For release builds (CI): ARDUINO_USB_MODE is removed (prevents hanging, allows normal boot)
 
 The script detects release builds by checking for the WLED_RELEASE environment variable
 which is set to True in the GitHub Actions CI workflow.
@@ -12,6 +12,10 @@ which is set to True in the GitHub Actions CI workflow.
 CRITICAL: This change only applies to boards with USB-OTG (ARDUINO_USB_CDC_ON_BOOT=1).
 For boards with classical UART-to-USB chips (ARDUINO_USB_CDC_ON_BOOT=0), 
 ARDUINO_USB_MODE=1 is harmless and left unchanged.
+
+IMPORTANT: We remove ARDUINO_USB_MODE entirely for release builds rather than setting 
+it to 0, because ARDUINO_USB_MODE=0 breaks Serial functionality when CDC_ON_BOOT=1.
+When ARDUINO_USB_MODE is undefined, the framework uses appropriate defaults.
 """
 ## This script was created with the help of an AI, reviewed and tested by @softhack007
 
@@ -65,14 +69,17 @@ def has_usb_mode_enabled(env):
 
 def conditional_usb_mode(env):
     """
-    Conditionally set ARDUINO_USB_MODE based on build context.
+    Conditionally manage ARDUINO_USB_MODE based on build context.
     
     For ESP32-C3, ESP32-S2, and ESP32-S3 variants with USB-OTG (CDC_ON_BOOT=1):
     - Development builds: ARDUINO_USB_MODE=1 (default, good for debugging)
-    - Release builds: ARDUINO_USB_MODE=0 (prevents hanging without USB debugger)
+    - Release builds: ARDUINO_USB_MODE removed (prevents hanging, preserves Serial functionality)
     
     For boards with classical UART-to-USB chip (CDC_ON_BOOT=0):
     - ARDUINO_USB_MODE=1 is harmless and left unchanged
+    
+    Note: We remove the flag entirely rather than setting to 0, because 
+    ARDUINO_USB_MODE=0 breaks Serial functionality with CDC_ON_BOOT=1.
     """
     
     # Check if this is a release build (CI sets WLED_RELEASE=True)
@@ -86,15 +93,14 @@ def conditional_usb_mode(env):
             return
         
         print("WLED Release build detected - board uses USB-OTG (CDC_ON_BOOT=1)")
-        print("  Setting ARDUINO_USB_MODE=0 for production")
+        print("  Removing ARDUINO_USB_MODE definition for production")
         
         # Check if ARDUINO_USB_MODE=1 is present
         if has_usb_mode_enabled(env):
-            # Remove the old definition and add the new one
-            # This approach properly handles flag inheritance in PlatformIO
+            # Remove ARDUINO_USB_MODE entirely - don't set it to 0 as that breaks Serial
+            # When undefined, the framework uses appropriate defaults based on CDC_ON_BOOT
             env.Append(BUILD_UNFLAGS=["-DARDUINO_USB_MODE=1"])
-            env.Append(CPPDEFINES=[("ARDUINO_USB_MODE", "0")])
-            print(f"  Changed ARDUINO_USB_MODE from 1 to 0")
+            print(f"  Removed ARDUINO_USB_MODE definition (was 1)")
             
     else:
         # Development build
