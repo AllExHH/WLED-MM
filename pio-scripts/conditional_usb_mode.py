@@ -87,43 +87,13 @@ def conditional_usb_mode(env):
         print("WLED Release build detected - board has USB-OTG (CDC_ON_BOOT=1)")
         print("  Setting ARDUINO_USB_MODE=0 for production")
         
-        # Find and modify ARDUINO_USB_MODE in build flags
-        build_flags = env.get('BUILD_FLAGS', [])
-        cpp_defines = env.get('CPPDEFINES', [])
-        
-        # Look through CPPDEFINES and modify ARDUINO_USB_MODE if found
-        modified = False
-        new_defines = []
-        
-        for define in cpp_defines:
-            if isinstance(define, (list, tuple)) and len(define) == 2:
-                if define[0] == 'ARDUINO_USB_MODE' and define[1] == '1':
-                    # Change ARDUINO_USB_MODE from 1 to 0 for release builds
-                    new_defines.append(('ARDUINO_USB_MODE', '0'))
-                    modified = True
-                    print(f"  Changed ARDUINO_USB_MODE from 1 to 0")
-                else:
-                    new_defines.append(define)
-            else:
-                new_defines.append(define)
-        
-        if modified:
-            env.Replace(CPPDEFINES=new_defines)
-        
-        # Also check raw build flags for -DARDUINO_USB_MODE=1
-        new_build_flags = []
-        for flag in build_flags:
-            if isinstance(flag, str) and 'ARDUINO_USB_MODE=1' in flag:
-                # Replace ARDUINO_USB_MODE=1 with ARDUINO_USB_MODE=0
-                new_flag = flag.replace('ARDUINO_USB_MODE=1', 'ARDUINO_USB_MODE=0')
-                new_build_flags.append(new_flag)
-                modified = True
-                print(f"  Modified build flag: {flag} -> {new_flag}")
-            else:
-                new_build_flags.append(flag)
-        
-        if modified:
-            env.Replace(BUILD_FLAGS=new_build_flags)
+        # Check if ARDUINO_USB_MODE=1 is present
+        if has_usb_mode_enabled(env):
+            # Remove the old definition and add the new one
+            # This approach properly handles flag inheritance in PlatformIO
+            env.Append(BUILD_UNFLAGS=["-DARDUINO_USB_MODE=1"])
+            env.Append(CPPDEFINES=[("ARDUINO_USB_MODE", "0")])
+            print(f"  Changed ARDUINO_USB_MODE from 1 to 0")
             
     else:
         # Development build
