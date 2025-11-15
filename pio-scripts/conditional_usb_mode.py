@@ -8,25 +8,62 @@ This script automatically sets ARDUINO_USB_MODE based on the build context:
 
 The script detects release builds by checking for the WLED_RELEASE environment variable
 which is set to True in the GitHub Actions CI workflow.
+
+CRITICAL: This change only applies to boards with USB-OTG (ARDUINO_USB_CDC_ON_BOOT=1).
+For boards with classical UART-to-USB chips (ARDUINO_USB_CDC_ON_BOOT=0), 
+ARDUINO_USB_MODE=1 is harmless and left unchanged.
 """
 
 Import('env')
 import os
 
+def has_cdc_on_boot_enabled(env):
+    """
+    Check if ARDUINO_USB_CDC_ON_BOOT is set to 1 in the build configuration.
+    
+    Returns True if CDC_ON_BOOT=1, False otherwise.
+    This is used to identify boards with USB-OTG (native USB) vs UART-to-USB chips.
+    """
+    cpp_defines = env.get('CPPDEFINES', [])
+    build_flags = env.get('BUILD_FLAGS', [])
+    
+    # Check in CPPDEFINES
+    for define in cpp_defines:
+        if isinstance(define, (list, tuple)) and len(define) == 2:
+            if define[0] == 'ARDUINO_USB_CDC_ON_BOOT' and define[1] == '1':
+                return True
+    
+    # Check in raw build flags
+    for flag in build_flags:
+        if isinstance(flag, str) and 'ARDUINO_USB_CDC_ON_BOOT=1' in flag:
+            return True
+    
+    return False
+
 def conditional_usb_mode(env):
     """
     Conditionally set ARDUINO_USB_MODE based on build context.
     
-    For ESP32-C3, ESP32-S2, and ESP32-S3 variants:
+    For ESP32-C3, ESP32-S2, and ESP32-S3 variants with USB-OTG (CDC_ON_BOOT=1):
     - Development builds: ARDUINO_USB_MODE=1 (default, good for debugging)
     - Release builds: ARDUINO_USB_MODE=0 (prevents hanging without USB debugger)
+    
+    For boards with classical UART-to-USB chip (CDC_ON_BOOT=0):
+    - ARDUINO_USB_MODE=1 is harmless and left unchanged
     """
     
     # Check if this is a release build (CI sets WLED_RELEASE=True)
     is_release_build = os.environ.get('WLED_RELEASE', '').lower() in ('true', '1', 'yes')
     
     if is_release_build:
-        print("WLED Release build detected - setting ARDUINO_USB_MODE=0 for production")
+        # Check if this board uses USB-OTG (CDC_ON_BOOT=1)
+        if not has_cdc_on_boot_enabled(env):
+            print("WLED Release build detected - board has UART-to-USB chip (CDC_ON_BOOT=0)")
+            print("  Keeping ARDUINO_USB_MODE=1 (harmless for UART-to-USB boards)")
+            return
+        
+        print("WLED Release build detected - board has USB-OTG (CDC_ON_BOOT=1)")
+        print("  Setting ARDUINO_USB_MODE=0 for production")
         
         # Find and modify ARDUINO_USB_MODE in build flags
         build_flags = env.get('BUILD_FLAGS', [])
