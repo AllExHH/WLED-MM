@@ -141,6 +141,11 @@ byte renderImageToSegment(Segment &seg) {
       USER_PRINTF("GIF decoder unsupported file: %s\n", lastFilename);
       return IMAGE_ERROR_UNSUPPORTED_FORMAT;
     }
+
+    // flicker fixer: if we have ws2812b leds, lets wait a moment until RMT output is done.
+    unsigned t0 = millis();
+    while (strip.isUpdating() && (millis() - t0 < 100)) delay(1); // up to 100 ms = good enough for up to 1800 LEDs per output
+
     if (file) file.close();
     if (!openGif(lastFilename)) {
       gifDecodeFailed = true;
@@ -217,6 +222,10 @@ byte renderImageToSegment(Segment &seg) {
 
   // TODO consider handling this on FX level with a different frametime, but that would cause slow gifs to speed up during transitions
   if (millis() - lastFrameDisplayTime < wait) return IMAGE_ERROR_WAITING;
+
+  // flicker fixer: if we have ws2812b leds, lets wait a moment until RMT output is done.
+  unsigned td0 = millis();
+  while (strip.isUpdating() && (millis() - td0 < 20)) delay(1); // wait up to 20ms for LED output to finish
 
   int result = decoder.decodeFrame(false);
   if (result < 0) {
