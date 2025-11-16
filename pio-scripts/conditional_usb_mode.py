@@ -29,8 +29,14 @@ def has_cdc_on_boot_enabled(env):
     Returns True if CDC_ON_BOOT=1, False otherwise.
     This is used to identify boards with USB-OTG (native USB) vs UART-to-USB chips.
     """
-    cpp_defines = env.get('CPPDEFINES', [])
+    build_unflags = env.get('BUILD_UNFLAGS', [])
     build_flags = env.get('BUILD_FLAGS', [])
+    cpp_defines = env.get('CPPDEFINES', [])
+
+    # Check in raw build unflags - unflags have priority over flags
+    for unflag in build_unflags:
+        if isinstance(unflag, str) and 'ARDUINO_USB_CDC_ON_BOOT=1' in unflag:
+            return False
     
     # Check in CPPDEFINES
     for define in cpp_defines:
@@ -51,8 +57,13 @@ def has_usb_mode_enabled(env):
     
     Returns True if USB_MODE=1, False otherwise.
     """
-    cpp_defines = env.get('CPPDEFINES', [])
+    build_unflags = env.get('BUILD_UNFLAGS', [])
     build_flags = env.get('BUILD_FLAGS', [])
+    cpp_defines = env.get('CPPDEFINES', [])
+    # Check in raw build unflags - unflags have priority over flags
+    for unflag in build_unflags:
+        if isinstance(unflag, str) and 'ARDUINO_USB_MODE=1' in unflag:
+            return False
     
     # Check in CPPDEFINES
     for define in cpp_defines:
