@@ -817,7 +817,7 @@ void serializeConfig() {
 
   for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
     Bus *bus = busses.getBus(s);
-    if (!bus || !bus->isOk() || bus->getLength()==0) break;       // WLEDMM exclude not initialized busses
+    if (!bus || bus->getLength()==0) break;
     JsonObject ins = hw_led_ins.createNestedObject();
     ins["start"] = bus->getStart();
     ins["len"] = bus->getLength();
