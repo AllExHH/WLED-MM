@@ -38,10 +38,10 @@ def has_cdc_on_boot_enabled(env):
             if define[0] == 'ARDUINO_USB_CDC_ON_BOOT' and define[1] == '1':
                 return True
     
-    # Check in raw build flags
-    for flag in build_flags:
-        if isinstance(flag, str) and 'ARDUINO_USB_CDC_ON_BOOT=1' in flag:
-            return True
+    # # Check in raw build flags - results can be misleading, because this ignores build_unflags
+    # for flag in build_flags:
+    #     if isinstance(flag, str) and 'ARDUINO_USB_CDC_ON_BOOT=1' in flag:
+    #         return True
     
     return False
 
@@ -60,10 +60,10 @@ def has_usb_mode_enabled(env):
             if define[0] == 'ARDUINO_USB_MODE' and define[1] == '1':
                 return True
     
-    # Check in raw build flags
-    for flag in build_flags:
-        if isinstance(flag, str) and 'ARDUINO_USB_MODE=1' in flag:
-            return True
+    # Check in raw build flags - results can be misleading, because this ignores build_unflags
+    # for flag in build_flags:
+    #    if isinstance(flag, str) and 'ARDUINO_USB_MODE=1' in flag:
+    #        return True
     
     return False
 
