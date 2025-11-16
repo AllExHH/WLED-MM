@@ -49,7 +49,7 @@ bool openGif(const char *filename) {  // side-effect: updates "file"
 }
 
 static Segment* activeSeg;
-static uint16_t gifWidth, gifHeight;  // these two must stay uint16_t, because they are passed by reference
+static uint16_t gifWidth = 0, gifHeight = 0;  // these two must stay uint16_t, because they are passed by reference
 static unsigned segCols = 1;
 static unsigned segRows = 1;
 static unsigned segLen = 1; // for 1D and 1DExpand support
@@ -104,6 +104,29 @@ void drawPixelCallback2D(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8
     for (int i = 0; i < perPixelX; i++) {
       activeSeg->setPixelColorXY(outX + i, outY + j, gamma8(red), gamma8(green), gamma8(blue));
     }
+  }
+}
+
+//  calculate image scaling; updates scaling factors and sets the best pixel drawing callback
+static void calculateScaling() {
+  if (gifDecodeFailed) return;
+  if ((gifWidth > 0 && gifHeight > 0)) {
+    if (activeSeg->is2D()) {
+      perPixelX   = (segCols + gifWidth -1) / gifWidth;
+      perPixelY   = (segRows + gifHeight-1) / gifHeight;
+      if (segCols != gifWidth || segRows != gifHeight) {
+        decoder.setDrawPixelCallback(drawPixelCallback2D);        // use 2D callback with scaling
+      } else {
+        decoder.setDrawPixelCallback(drawPixelCallbackNoScale2D); // use 2D callback without scaling
+      }
+    } else {
+      int totalImgPix = (int)gifWidth * gifHeight;
+      if (totalImgPix - segLen == 1) totalImgPix--; // handle off-by-one: skip last pixel instead of first (gifs constructed from 1D input pad last pixel if length is odd)
+      perPixelX   = (segLen + totalImgPix-1) / totalImgPix;
+      if (totalImgPix != segLen) {
+        decoder.setDrawPixelCallback(drawPixelCallback1D);        // use 1D callback with scaling
+      }
+    }    
   }
 }
 
@@ -192,24 +215,7 @@ byte renderImageToSegment(Segment &seg) {
       USER_PRINTF("Invalid GIF dimensions: %dx%d\n", gifWidth, gifHeight);
       return IMAGE_ERROR_GIF_DECODE;
     }
-    if (activeSeg->is2D()) {
-      perPixelX   = (segCols + gifWidth -1) / gifWidth;
-      perPixelY   = (segRows + gifHeight-1) / gifHeight;
-      if (segCols != gifWidth || segRows != gifHeight) {
-        decoder.setDrawPixelCallback(drawPixelCallback2D);        // use 2D callback with scaling
-        //DEBUG_PRINTLN(F("scaling image"));
-      } else {
-        decoder.setDrawPixelCallback(drawPixelCallbackNoScale2D); // use 2D callback without scaling
-      }
-    } else {
-      int totalImgPix = (int)gifWidth * gifHeight;
-      if (totalImgPix - segLen == 1) totalImgPix--; // handle off-by-one: skip last pixel instead of first (gifs constructed from 1D input pad last pixel if length is odd)
-      perPixelX   = (segLen + totalImgPix-1) / totalImgPix;
-      if (totalImgPix != segLen) {
-        decoder.setDrawPixelCallback(drawPixelCallback1D);        // use 1D callback with scaling
-        //DEBUG_PRINTLN(F("scaling image"));
-      }
-    }
+    calculateScaling();
   }
 
   if (gifDecodeFailed) return IMAGE_ERROR_PREV;
@@ -226,6 +232,9 @@ byte renderImageToSegment(Segment &seg) {
   // flicker fixer: if we have ws2812b leds, lets wait a moment until RMT output is done.
   unsigned td0 = millis();
   while (strip.isUpdating() && (millis() - td0 < 20)) delay(1); // wait up to 20ms for LED output to finish
+
+  // WLEDMM experimental: segment options might change (mirror, transpose, grouping, spacing) at any time
+  calculateScaling(); // --> re-calculate scaling for each frame
 
   int result = decoder.decodeFrame(false);
   if (result < 0) {
@@ -247,6 +256,7 @@ void endImagePlayback(Segment *seg) {
   if (!activeSeg || activeSeg != seg) return;
   if (file) file.close();
   decoder.dealloc();
+  gifWidth = 0; gifHeight = 0; // WLEDMM clear cached image dimensions
   gifDecodeFailed = false;
   activeSeg = nullptr;
   strcpy(lastFilename, "/");  // reset filename
