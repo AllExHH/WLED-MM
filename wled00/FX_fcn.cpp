@@ -2052,6 +2052,7 @@ void WS2812FX::estimateCurrentAndLimitBri() {
 
   for (uint_fast8_t bNum = 0; bNum < busses.getNumBusses(); bNum++) {
     Bus *bus = busses.getBus(bNum);
+    if (!bus || !bus->isOk()) continue;    // WLEDMM skip busses that are not initialized yet
     auto btype = bus->getType();
     if (EXCLUDE_FROM_ABL(btype)) continue; // WLEDMM exclude non-ABL and network busses
     uint16_t len = bus->getLength();
