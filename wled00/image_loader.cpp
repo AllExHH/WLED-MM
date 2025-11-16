@@ -110,7 +110,7 @@ void drawPixelCallback2D(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8
 //  calculate image scaling; updates scaling factors and sets the best pixel drawing callback
 static void calculateScaling() {
   if (gifDecodeFailed) return;
-  if ((gifWidth > 0 && gifHeight > 0)) {
+  if ((gifWidth > 0) && (gifHeight > 0)) {
     if (activeSeg->is2D()) {
       perPixelX   = (segCols + gifWidth -1) / gifWidth;
       perPixelY   = (segRows + gifHeight-1) / gifHeight;
