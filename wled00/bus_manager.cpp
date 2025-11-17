@@ -923,6 +923,8 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 #endif
 
   USER_PRINTF("MatrixPanel_I2S_DMA config - %ux%u (type %u) length: %u, %u bits/pixel.\n", mxconfig.mx_width, mxconfig.mx_height, bc.type, mxconfig.chain_length, mxconfig.getPixelColorDepthBits() * 3);
+  USER_PRINTF("MatrixPanel_I2S_DMA config - clock phase = %s, latch_blanking = %d, min refresh = %d fps.\n", 
+              mxconfig.clkphase ? "positive edge":"negative edge", int(mxconfig.latch_blanking), int(mxconfig.min_refresh_rate));
   DEBUG_PRINT(F("Free heap: ")); DEBUG_PRINTLN(ESP.getFreeHeap()); lastHeap = ESP.getFreeHeap();
 
   // check if we can re-use the existing display driver
@@ -1106,26 +1108,31 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 }
 
 void __attribute__((hot)) IRAM_ATTR BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c) {
-  if ( pix >= _len) return;
+// if ( pix >= _len) return;  // not necessary - this was already checked at busses.setPixelColor()
   #if 0
   if ((correctWB) && (_cct >= 1900)) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT - reduces framerate by up to 10%. If you still want it, change the line above to "#if 1"
   #endif
-  if (_ledBuffer) {
+// if (_ledBuffer) { // not necessary - isOk() would return false if buffer is not availeable
     CRGB fastled_col = CRGB(c);
     if (_ledBuffer[pix] != fastled_col) {
       _ledBuffer[pix] = fastled_col;
       setBitInArray(_ledsDirty, pix, true);  // flag pixel as "dirty"
     }
-  }
+// }
 }
 
+// needed to mimic NeoPixelBus, which returns scaled-down colours
 uint32_t IRAM_ATTR BusHub75Matrix::getPixelColor(uint16_t pix) const {
-  if (pix >= _len || !_ledBuffer) return BLACK;
-  return uint32_t(_ledBuffer[pix].scale8(_bri)) & 0x00FFFFFF;  // scale8() is needed to mimic NeoPixelBus, which returns scaled-down colours
+// if (pix >= _len || !_ledBuffer) return BLACK; // not necessary - this was already checked at busses.getPixelColor()
+#if defined(WLEDMM_FASTPATH) && !defined(WLEDMM_SAVE_FLASH) 
+  return color_fade(uint32_t(_ledBuffer[pix]) & 0x00FFFFFF, _bri);   // this is slightly faster if we have inline color_fade()
+#else
+  return uint32_t(_ledBuffer[pix].scale8(_bri)) & 0x00FFFFFF;        // do it the FastLED way
+#endif
 }
 
 uint32_t __attribute__((hot)) IRAM_ATTR BusHub75Matrix::getPixelColorRestored(uint16_t pix) const {
-  if (pix >= _len || !_ledBuffer) return BLACK;
+//  if (pix >= _len || !_ledBuffer) return BLACK;  // not necessary - this was already checked at busses.getPixelColorRestored()
   return uint32_t(_ledBuffer[pix]) & 0x00FFFFFF;
 }
 
