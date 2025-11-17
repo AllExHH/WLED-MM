@@ -167,7 +167,7 @@ byte renderImageToSegment(Segment &seg) {
     size_t fnameLen = strlen(lastFilename);
     if ((fnameLen < 4) || strcmp(lastFilename + fnameLen - 4, ".gif") != 0) { // empty segment name, name too short, or name not ending in .gif
       gifDecodeFailed = true;
-      USER_PRINTF("GIF decoder unsupported file: %s\n", lastFilename);
+      DEBUG_PRINTF("GIF decoder unsupported file: %s\n", lastFilename); // can cause message flood if two segments compete over one decoder instance
       return IMAGE_ERROR_UNSUPPORTED_FORMAT;
     }
 
@@ -221,6 +221,7 @@ byte renderImageToSegment(Segment &seg) {
       USER_PRINTF("Invalid GIF dimensions: %dx%d\n", gifWidth, gifHeight);
       return IMAGE_ERROR_GIF_DECODE;
     }
+    USER_PRINTF("Started GIF decoding   %dx%d pixels -> %dx%d Segment\n", gifWidth, gifHeight, segCols, segRows);
     calculateScaling();
   }
 
@@ -262,7 +263,7 @@ void endImagePlayback(Segment *seg) {
   if (!activeSeg || activeSeg != seg) return;
   if (file) file.close();
   decoder.dealloc();
-  gifWidth = 0; gifHeight = 0; // WLEDMM clear cached image dimensions
+  gifWidth = 0; gifHeight = 0; // clear cached image dimensions
   gifDecodeFailed = false;
   activeSeg = nullptr;
   strcpy(lastFilename, "/");  // reset filename
