@@ -99,12 +99,27 @@ void drawPixelCallback2D(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8
   // Pack coordinates uniquely: outY into upper 16 bits, outX into lower 16 bits
   if (((outY << 16) | outX) == lastCoordinate) return; // skip setting same coordinate again
   lastCoordinate = (outY << 16) | outX; // since input is a "scanline" this is sufficient to identify a "unique" coordinate
+  // pre-calculate final pixel color - avoids repetition inside the loop
+  red = gamma8(red); green=gamma8(green); blue=gamma8(blue);
+  uint32_t pColor = RGBW32(red, green, blue, 0);
   // set multiple pixels if upscaling //  softhack007: changed loop x/y order -> minor speedup from better cache locality
   for (int j = 0; j < perPixelY; j++) {
+    int pixelY = outY + j;
     for (int i = 0; i < perPixelX; i++) {
-      activeSeg->setPixelColorXY(outX + i, outY + j, gamma8(red), gamma8(green), gamma8(blue));
+      int pixelX = outX + i;
+      activeSeg->setPixelColorXY(pixelX, pixelY, pColor);
     }
   }
+}
+// WLEDMM 2D without upscaling loop - up to 10% faster
+void drawPixelCallbackDownScale2D(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue) {
+  // simple nearest-neighbor downscaling
+  int outX = (int)x * segCols  / gifWidth;
+  int outY = (int)y * segRows / gifHeight;
+  int32_t newCoordinate = ((outY << 16) | outX);
+  if (newCoordinate == lastCoordinate) return; // skip setting same coordinate again
+  lastCoordinate = newCoordinate;
+  activeSeg->setPixelColorXY(outX, outY, gamma8(red), gamma8(green), gamma8(blue));
 }
 
 //  calculate image scaling; updates scaling factors and sets the best pixel drawing callback
@@ -115,7 +130,10 @@ static void calculateScaling() {
       perPixelX   = (segCols + gifWidth -1) / gifWidth;
       perPixelY   = (segRows + gifHeight-1) / gifHeight;
       if (segCols != gifWidth || segRows != gifHeight) {
-        decoder.setDrawPixelCallback(drawPixelCallback2D);        // use 2D callback with scaling
+        if ((perPixelX <2) && (perPixelY <2))
+          decoder.setDrawPixelCallback(drawPixelCallbackDownScale2D);// use 2D callback with downscaling only
+        else
+          decoder.setDrawPixelCallback(drawPixelCallback2D);        // use 2D callback with full scaling
       } else {
         decoder.setDrawPixelCallback(drawPixelCallbackNoScale2D); // use 2D callback without scaling
       }
