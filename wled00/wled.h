@@ -87,6 +87,9 @@
 
 // WLEDMM MANDATORY flags
 #define WLEDMM_PROTECT_SERVICE // prevents crashes when effects are drawing while asyncWebServer tries to modify segments at the same time
+#if !defined(WLEDMM_FASTPATH) && !defined(ESP8266)
+#define WLEDMM_FASTPATH        // all WLED-MM build are FASTPATH
+#endif
 
 // Library inclusions.
 #include <Arduino.h>
