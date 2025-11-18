@@ -56,13 +56,13 @@ static portMUX_TYPE s_wled_strip_mux = portMUX_INITIALIZER_UNLOCKED; // to prote
   #error "Max segments must be at least max number of busses!"
 #endif
 
-// WLEDMM experimental . this is a "C style" wrapper for strip.()
+// WLEDMM experimental . this is a "C style" wrapper for strip.waitUntilIdle();
 // This workaround is just needed for the segment class, that does't know about "strip"
 void strip_wait_until_idle(String whoCalledMe) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)  // WLEDMM experimental 
   if (strip.isServicing() && (strncmp(pcTaskGetTaskName(NULL), "loopTask", 8) != 0)) { // if we are in looptask (arduino loop), its safe to proceed without waiting
   USER_PRINTLN(whoCalledMe + String(": strip is still drawing effects."));
-  strip.();
+  strip.waitUntilIdle();
   }
 #endif
 }
