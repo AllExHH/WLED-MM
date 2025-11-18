@@ -1754,7 +1754,15 @@ class AudioReactive : public Usermod {
       // add info for UI
       if ((receivedPacket.frameCounter > 0) && (lastFrameCounter > 0)) receivedFormat = 3; // v2+
       else receivedFormat = 2; // v2
-      // check sequence
+
+         // Simpler 8-bit rollover-safe sequence check:
+         // (int8_t)(cur - prev) > 0  => cur is ahead of prev by 1..127
+         //                        0 => duplicate, 
+		 //                      < 0 => older
+         //    bool sequenceOK = !audioSyncSequence || receivedPacket.frameCounter == 0 ||   // always accept legacy "0"
+         //    ((int8_t)(receivedPacket.frameCounter - lastFrameCounter) > 0);
+
+	  // check sequence
       bool sequenceOK = false;
       if(receivedPacket.frameCounter > lastFrameCounter) sequenceOK = true;                  // sequence OK
       if((lastFrameCounter < 12) && (receivedPacket.frameCounter > 248)) sequenceOK = false; // prevent sequence "roll-back" due to late packets (1->254)
