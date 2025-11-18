@@ -56,13 +56,13 @@ static portMUX_TYPE s_wled_strip_mux = portMUX_INITIALIZER_UNLOCKED; // to prote
   #error "Max segments must be at least max number of busses!"
 #endif
 
-// WLEDMM experimental . this is a "C style" wrapper for strip.waitUntilIdle()
+// WLEDMM experimental . this is a "C style" wrapper for strip.()
 // This workaround is just needed for the segment class, that does't know about "strip"
 void strip_wait_until_idle(String whoCalledMe) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)  // WLEDMM experimental 
   if (strip.isServicing() && (strncmp(pcTaskGetTaskName(NULL), "loopTask", 8) != 0)) { // if we are in looptask (arduino loop), its safe to proceed without waiting
   USER_PRINTLN(whoCalledMe + String(": strip is still drawing effects."));
-  strip.waitUntilIdle();
+  strip.();
   }
 #endif
 }
@@ -1893,7 +1893,8 @@ void WS2812FX::finalizeInit(void)
 
 // WLEDMM wait until strip is idle (=not servicing).
 // on 8266 this function does nothing, because we can only do "busy waiting" on ESP32
-#define MAX_IDLE_WAIT_MS 50  // seems to work in most cases
+//#define MAX_IDLE_WAIT_MS 50  // seems to work in most cases
+#define MAX_IDLE_WAIT_MS 120   // better safe than sorry - similar to the timeout used by upstream WLED
 void WS2812FX::waitUntilIdle(void) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)
   if (isServicing()) {
