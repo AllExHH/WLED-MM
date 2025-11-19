@@ -15,7 +15,7 @@ static inline bool isValidContinuation(unsigned char byte) {
 uint16_t unicodeToWchar16(const unsigned char* utf8, size_t maxLen) {
   if (!utf8 || (maxLen < 1) || *utf8 == '\0') return 0; // sanity check
 
-  size_t length = strlen((const char*) utf8);
+  size_t length = strnlen((const char*) utf8, maxLen);
   length = min(length, maxLen);
   if (length < 1) return 0;            // sanity check
 
@@ -48,7 +48,7 @@ uint16_t unicodeToWchar16(const unsigned char* utf8, size_t maxLen) {
 // return nullptr at end of input
 const unsigned char* nextUnicode(const unsigned char* utf8, size_t maxLen) {
   if ((!utf8) || (maxLen < 1) || (*utf8 == 0)) return nullptr; // sanity check
-  size_t length = strlen((const char*) utf8); // safe, because utf8 is a C string with proper NUL termination
+  size_t length = strnlen((const char*) utf8, maxLen);
   length = min(length, maxLen);
   if (length < 1) return nullptr;      // we are at end of input
 
