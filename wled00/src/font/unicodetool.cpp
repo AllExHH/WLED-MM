@@ -25,23 +25,23 @@ uint16_t unicodeToWchar16(const unsigned char* utf8, size_t maxLen) {
   if (ch0 <= 0x7F) return ch0;                    // 1-byte ASCII (0x00-0x7F)
   if ((ch0 & 0b11100000) == 0b11000000) {         // 2-byte sequence (0xC2-0xDF)
     // uses lower 5 bits of the first byte, and lower 6 bits from the next byte
-    if (length < 2 || !isValidContinuation(utf8[1])) return 0x2022; // • for malformed
+    if (length < 2 || !isValidContinuation(utf8[1])) return BAD_CODE; // malformed
     codepoint = ((ch0 & 0b00011111) << 6) | (utf8[1] & 0b00111111);
-    if (codepoint < 0x80) return 0x2022; // Reject overlong encodings (must be >= 0x80)
+    if (codepoint < 0x80) return UNKNOWN_CODE;    // Reject overlong encodings (must be >= 0x80)
     return uint16_t(codepoint);
   } else {
     if ((ch0 & 0b11110000) == 0b11100000) {       // 3-byte sequence (0xE0-0xEF)
       // uses lower 4 bits of the first byte, and lower 6 bits from the next byte, lower 6 bits from third byte
-      if (length < 3 || !isValidContinuation(utf8[1]) || !isValidContinuation(utf8[2])) return 0x2022; // • for malformed
+      if (length < 3 || !isValidContinuation(utf8[1]) || !isValidContinuation(utf8[2])) return BAD_CODE; // malformed
       codepoint = ((ch0 & 0b00001111) << 12) | ((utf8[1] & 0b00111111) << 6) | (utf8[2] & 0b00111111);
-      if (codepoint < 0x800) return 0x2022;                          // Reject overlong encodings (must be >= 0x800)
-      if (codepoint >= 0xD800 && codepoint <= 0xDFFF) return 0x2022; // Reject UTF-16 surrogate pairs (U+D800..U+DFFF)
-      if (codepoint >= 0x010000) codepoint = 0x2022;                 // result exceeds uint16_t => return • for "unknown"
+      if (codepoint < 0x800) return UNKNOWN_CODE;                          // Reject overlong encodings (must be >= 0x800)
+      if (codepoint >= 0xD800 && codepoint <= 0xDFFF) return UNKNOWN_CODE; // Reject UTF-16 surrogate pairs (U+D800..U+DFFF)
+      if (codepoint >= 0x010000) codepoint = UNKNOWN_CODE;                 // result exceeds uint16_t => "unknown"
       return uint16_t(codepoint);
     }
   }
   // 4-byte sequence or invalid lead byte - since we only support up to 0xFFFF, return error marker
-  return 0x2022; // • for unsupported/invalid
+  return BAD_CODE; // unsupported/invalid
 }
 
 // returns a pointer to the next unicode item - can be used to "advance" conversion after unicodeToWchar16()

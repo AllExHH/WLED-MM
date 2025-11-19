@@ -2,6 +2,9 @@
 #define WLED_CODEPAGES_H
 #include <stdlib.h> // needed to get uint16_t definition
 
+constexpr uint16_t UNKNOWN_CODE = 0x2022; //  •
+constexpr uint16_t BAD_CODE     = 0x2022; //  •
+
 // UTF‑8 → reduced UTF‑16 decoding
 // translates the next unicode UTF-8 item into a 2-byte "code point"
 // return "•" in case of input errors, and for unsupported/invalid UTF-8
