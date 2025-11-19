@@ -53,7 +53,9 @@ const unsigned char* nextUnicode(const unsigned char* utf8, size_t maxLen) {
   if (length < 1) return nullptr;      // we are at end of input
 
   unsigned char ch0 = *utf8;           // get leading character
-  size_t codeLength = 1;               // default:  1-byte ASCII
+
+  // Calculate code length based on lead byte
+  size_t codeLength = 1;                                       // default:  1-byte ASCII
   if (ch0 >= 0x80) {
     if      ((ch0 & 0b11100000) == 0b11000000) codeLength = 2; // 2-byte sequence
     else if ((ch0 & 0b11110000) == 0b11100000) codeLength = 3; // 3-byte sequence
@@ -61,8 +63,13 @@ const unsigned char* nextUnicode(const unsigned char* utf8, size_t maxLen) {
     else codeLength = 1; // Skip single invalid byte and try to resync
   }
 
-  if (length < codeLength) return nullptr; // Check if we have enough bytes
-  else return utf8 + codeLength; // success: advance stream
+  // handle invalid continuation bytes
+  if ((codeLength >= 2) && (length < 2 || !isValidContinuation(utf8[1]))) codeLength = 1; // try to re-sync
+  if ((codeLength >= 3) && (length < 3 || !isValidContinuation(utf8[2]))) codeLength = 1; // try to re-sync
+  if ((codeLength >= 4) && (length < 4 || !isValidContinuation(utf8[3]))) codeLength = 1; // try to re-sync
+
+  if (length < codeLength) return nullptr;                     // Check if we have enough bytes
+  else return utf8 + codeLength;                               // success: advance stream
 }
 
 #endif

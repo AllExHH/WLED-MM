@@ -827,7 +827,8 @@ typedef struct Segment {
     void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2 = 0, bool drawShadow = false);
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2) { drawCharacter(chr, x, y, w, h, uint32_t(c) & 0x00FFFFFF, uint32_t(c2) & 0x00FFFFFF); } // automatic inline
     // unicode-aware wrapper for drawCharacter(), to be called from  mode_2Dscrollingtext()
-    void drawText(const unsigned char* Text, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2 = 0, bool drawShadow = false);
+    void drawText(const unsigned char* text, size_t maxLen, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2 = 0, bool drawShadow = false);
+    // #if !WLED_ENABLE_FULL_FONTS => drawText() will fall back to just forwarding each char to drawCharacter()
 
     void wu_pixel(uint32_t x, uint32_t y, CRGB c);
     //void blur1d(fract8 blur_amount); // blur all rows in 1 dimension
