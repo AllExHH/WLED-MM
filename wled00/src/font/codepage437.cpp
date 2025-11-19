@@ -1,8 +1,9 @@
 #if defined(WLED_ENABLE_FULL_FONTS)
 
 #include "codepages.h"
+#include <string.h>
 
-// translates unicode 2-byte (UTF-16) "code points" into corresponding characters in codepage 347 (IBM PC aka PC-8)
+// translates unicode 2-byte (UTF-16) "code points" into corresponding characters in codepage 437 (IBM PC aka PC-8)
 // based on a table from https://en.wikipedia.org/wiki/Code_page_437#Character_set
 uint16_t wchar16ToCodepage437(uint16_t wideChar) {
 
@@ -204,8 +205,5 @@ uint16_t wchar16ToCodepage437(uint16_t wideChar) {
   }
 
 }
-
-
-
 
 #endif
