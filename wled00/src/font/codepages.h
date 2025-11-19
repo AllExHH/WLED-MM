@@ -1,6 +1,7 @@
 #ifndef WLED_CODEPAGES_H
 #define WLED_CODEPAGES_H
 #include <stdlib.h> // needed to get uint16_t definition
+#include <stdint.h> // helps for code analysis with clang
 
 constexpr uint16_t UNKNOWN_CODE = 0x2022; //  •
 constexpr uint16_t BAD_CODE     = 0x2022; //  •
