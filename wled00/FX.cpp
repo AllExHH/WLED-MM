@@ -6911,12 +6911,13 @@ uint16_t mode_2Dscrollingtext(void) {
     col2 = SEGCOLOR(2);
   }
   SEGMENT.drawText((unsigned char*)text, maxLen, numberOfChars, int(cols) - int(SEGENV.aux0), yoffset, letterWidth, letterHeight, col1, col2, drawShadow);
+#endif
+
   // WLEDMM add some blur
-  if (SEGENV.check3) {
+  if (SEGMENT.check3) {
     if (SEGMENT.custom1 < 16) SEGMENT.blurRows(16); // only blur if no trail
     SEGMENT.blurCols(20);
   }
-#endif
 
   return FRAMETIME;
 }
