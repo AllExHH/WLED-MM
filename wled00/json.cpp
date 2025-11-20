@@ -2,6 +2,10 @@
 
 #include "palettes.h"
 
+#if defined(WLED_ENABLE_FULL_FONTS)
+#include "src/font/codepages.h"
+#endif
+
 #define JSON_PATH_STATE      1
 #define JSON_PATH_INFO       2
 #define JSON_PATH_STATE_INFO 3
@@ -145,11 +149,19 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     const char * name = elem["n"].as<const char*>();
     size_t len = 0;
     if (name != nullptr) len = strlen(name);
-    if (len > 0 && len < 32) {  // ToDO: this is why long segment names silently get deleted - truncating would be better
+    if (len > 0) {
+      // WLEDMM: truncate segment name, instead of silently deleting
+      if (len > 32) { // ToDO: use WLED_MAX_SEGNAME_LEN
+        len = 32;     // cut to max segment name length
+        #if defined(WLED_ENABLE_FULL_FONTS)
+        if (name[len] > 127) // UTF-8 => don't cut in the middle of a multi-byte char
+          len = cutUnicodeAt((unsigned char*)name, len-1) +1; // +1 to convert between index and length
+        #endif
+        USER_PRINTF("Segment name too long (%d chars), truncated to \"%.*s\"\n", strlen(name), (int)len, name);
+      }
       seg.name = new(std::nothrow) char[len+1];
-      if (seg.name) strlcpy(seg.name, name, len+1);
+      if (seg.name) strlcpy(seg.name, name, len+1); // copies at most size-1 characters and always null-terminates
     } else {
-      if (len > 0) { USER_PRINTF("! too-long segment name \"%s\" (%d chars) dropped.\n", name, len);}
       // but is empty (already deleted above)
       elem.remove("n");
     }

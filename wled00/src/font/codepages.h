@@ -24,6 +24,10 @@ const unsigned char* nextUnicode(const unsigned char* utf8, size_t maxLen);    /
 // unicode-aware string length
 size_t strlenUC(const unsigned char* utf8);
 
+// the next (lesser) string index that is safe for cutting an UTF-8 string
+// Important: calling code is responsible to provide a string with at least _where_ chars
+size_t cutUnicodeAt(const unsigned char* utf8, size_t where);
+
 // translates unicode 2-byte (UTF-16) "code point" into corresponding character in codepage 437 (IBM PC aka PC-8)
 uint16_t wchar16ToCodepage437(uint16_t wideChar);                              // codepage437.cpp
 
