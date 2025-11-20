@@ -1736,14 +1736,14 @@ void WS2812FX::enumerateLedmaps() {
             (void) cleanUpName(name);
             len = strlen(name);
             ledmapNames[i-1] = new(std::nothrow) char[len+1]; // +1 to include terminating \0 
-            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, sizeof(name));
+            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, len+1);
           }
           if (!ledmapNames[i-1]) {
             char tmp[33];
             snprintf_P(tmp, 32, PSTR("ledmap%d.json"), i);
             size_t tmplen = strlen(tmp);
             ledmapNames[i-1] = new(std::nothrow) char[tmplen+1];
-            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, tmplen);
+            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, tmplen+1);
           }
 
           USER_PRINTF("enumerateLedmaps %s \"%s\"", fileName, name);
