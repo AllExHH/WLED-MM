@@ -3,8 +3,9 @@
 #include <stdlib.h> // needed to get uint16_t definition
 #include <stdint.h> // helps for code analysis with clang
 
-constexpr uint16_t UNKNOWN_CODE = 0x2022; //  •
-constexpr uint16_t BAD_CODE     = 0x2022; //  •
+//constexpr uint16_t UNKNOWN_CODE = 0x2219;  // ∙ multiplication dot
+constexpr uint16_t UNKNOWN_CODE = 0x00B7;   //  · middle dot
+constexpr uint16_t BAD_CODE     = 0x2022;   //  • bigger dot
 
 // UTF‑8 → reduced UTF‑16 decoding
 // translates the next unicode UTF-8 item into a 2-byte "code point"

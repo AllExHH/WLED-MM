@@ -3,6 +3,8 @@
 #include "codepages.h"
 #include <string.h>
 
+constexpr uint8_t CP437_UNKNOWN = 250; // small middle dot · // not sure if we better return " " ?
+
 // translates unicode 2-byte (UTF-16) "code points" into corresponding characters in codepage 437 (IBM PC aka PC-8)
 // based on a table from https://en.wikipedia.org/wiki/Code_page_437#Character_set
 uint16_t wchar16ToCodepage437(uint16_t wideChar) {
@@ -45,7 +47,7 @@ uint16_t wchar16ToCodepage437(uint16_t wideChar) {
     case 0x25BC: return 0x1F; break; // ▼
 
     // characters 127 - 254
-    case 0x2302: return 0x7F; break; // ⌂
+    case 0x2302: return 0x7F; break; // ⌂ (aka DEL)
     case 0x00C7: return 0x80; break; // Ç
     case 0x00FC: return 0x81; break; // ü
     case 0x00E9: return 0x82; break; // é
@@ -201,7 +203,7 @@ uint16_t wchar16ToCodepage437(uint16_t wideChar) {
 
     // everything else: unknown
     //default: return 32; // blank
-    default: return 250; // small middle dot ·
+    default: return CP437_UNKNOWN; // small middle dot ·
   }
 
 }
