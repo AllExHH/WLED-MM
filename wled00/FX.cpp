@@ -6878,7 +6878,8 @@ uint16_t mode_2Dscrollingtext(void) {
     if ((numberOfLetters * letterWidth) > cols) ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + cols;      // offset
     else                                          SEGENV.aux0  = (cols + (numberOfLetters * letterWidth))/2;
     SEGENV.aux1 = (SEGENV.aux1 + 1) & 0xFF; // color shift // WLEDMM changed to prevent overflow
-    SEGENV.step = strip.now + map2(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED);
+    long minDelay = max((FRAMETIME_FIXED/2 + FRAMETIME_FIXED/4), int(FRAMETIME));
+    SEGENV.step = strip.now + map2(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, minDelay); // WLEDMM scroll faster
     if (!SEGMENT.check2) {
       for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++ )
         SEGMENT.blendPixelColorXY(x, y, SEGCOLOR(1), 255 - (SEGMENT.custom1>>1));
@@ -6910,6 +6911,11 @@ uint16_t mode_2Dscrollingtext(void) {
     col2 = SEGCOLOR(2);
   }
   SEGMENT.drawText((unsigned char*)text, maxLen, numberOfChars, int(cols) - int(SEGENV.aux0), yoffset, letterWidth, letterHeight, col1, col2, drawShadow);
+  // WLEDMM add some blur
+  if (SEGENV.check3) {
+    if (SEGMENT.custom1 < 16) SEGMENT.blurRows(16); // only blur if no trail
+    SEGMENT.blurCols(20);
+  }
 #endif
 
   return FRAMETIME;
