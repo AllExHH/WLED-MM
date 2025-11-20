@@ -892,25 +892,33 @@ bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
 #endif
 
 // unicode-aware wrapper for drawCharacter(), to be called from  mode_2Dscrollingtext()
-void Segment::drawText(const unsigned char* text, size_t maxLen, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, bool drawShadow) {
-  size_t textLength = min(maxLen, size_t(WLED_MAX_SEGNAME_LEN));
+void Segment::drawText(const unsigned char* text, size_t maxLen, int maxLetters, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, bool drawShadow) {
+  if (!isActive()) return; // not active
   // ToDO: find font _first/_last, based on width / height
 #if defined(WLED_ENABLE_FULL_FONTS)
   uint16_t decoded_text[WLED_MAX_SEGNAME_LEN+1] = { 0 };  // UTF-16 converted text. Cannot be longer than WLED_MAX_SEGNAME_LEN
   size_t utf16_index = 0;
-  for(const unsigned char* now = text; now != nullptr && now[0] != 0; now = nextUnicode(now, maxLen)) {
-    decoded_text[utf16_index] = unicodeToWchar16(now, maxLen);                   // UTF-8 decode into decoded_text
-    decoded_text[utf16_index] = wchar16ToCodepage437(decoded_text[utf16_index]); // decoded_text to CP437 (in-place conversion)
-    // toDo: ensure that decoded_text[i] is between console_font_YxZ_first and console_font_YxZ_last
-      // if (chr < 32 || chr > 126) --> clamp chr
-      // chr -= 32; // align with font table entries
-    utf16_index++;
+  for(const unsigned char* now = text; now != nullptr && now[0] != '\0'; now = nextUnicode(now, maxLen)) {
+    if (utf16_index <= WLED_MAX_SEGNAME_LEN) {
+      decoded_text[utf16_index] = unicodeToWchar16(now, maxLen);                   // UTF-8 decode into decoded_text
+      decoded_text[utf16_index] = wchar16ToCodepage437(decoded_text[utf16_index]); // decoded_text to CP437 (in-place conversion)
+      // toDo: ensure that decoded_text[i] is between console_font_YxZ_first and console_font_YxZ_last
+        // if (chr < 32 || chr > 126) --> clamp chr
+        // chr -= 32; // align with font table entries
+      utf16_index++;
+    }
   }
   decoded_text[utf16_index] = 0; // NUL terminate string
+  size_t textLength = min(utf16_index, size_t(maxLetters));
 #else
   const unsigned char* decoded_text = text;  // fallback
+  size_t textLength = min(strnlen((char*)text, maxLen), size_t(maxLetters));  
 #endif
-  // ToDO: pass decoded characters to drawCharacter()
+
+  // pass characters to drawCharacter()
+  for (int i = 0; i < textLength; i++) {
+    SEGMENT.drawCharacter((unsigned char) decoded_text[i], x + w*i, y, w, h, color, col2, drawShadow);
+  }
 }
 
 // draws a raster font character on canvas
@@ -918,10 +926,14 @@ void Segment::drawText(const unsigned char* text, size_t maxLen, int16_t x, int1
 void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, bool drawShadow) {
   if (!isActive()) return; // not active
 #if !defined(WLED_ENABLE_FULL_FONTS)
+  constexpr int space = 0; // font index of " " (space)
   if (chr < 32 || chr > 126) return; // legacy mode - only ASCII 32-126 supported
   chr -= 32; // align with font table entries
 #else
-  // ToDO: clamp to font limits
+  constexpr int space = 31; // font index of " "
+  // ToDO: clamp to actual font limits
+  if (chr < 1 || chr > 254) return; // sanity check // ToDO needs improvements 
+  chr = chr -1; // all fonts start at 1  // ToDO needs improvements
 #endif
 
   const uint16_t cols = virtualWidth();
@@ -935,7 +947,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
   //if (w<5 || w>6 || h!=8) return;
   if (drawShadow) w++; // one more column for shadow on right side
   for (int i = 0; i<h; i++) { // character height
-    int16_t y0 = y + i;
+    int y0 = y + i;
     if (y0 < 0) continue; // drawing off-screen
     if (y0 >= rows) break; // drawing off-screen
     uint8_t bits = 0;
@@ -945,19 +957,19 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
 
     switch (font) { // font = w * h
       case 24: bits = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]);
-        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_4x6[(chr * h) + i -1]);
-        break;  // 5x8 font
+        if ((i>space) && drawShadow) bits_up = pgm_read_byte_near(&console_font_4x6[(chr * h) + i -1]);
+        break;  // 4x6 font
       case 40: bits = pgm_read_byte_near(&console_font_5x8[(chr * h) + i]); 
-        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_5x8[(chr * h) + i -1]);
+        if ((i>space) && drawShadow) bits_up = pgm_read_byte_near(&console_font_5x8[(chr * h) + i -1]);
         break;  // 5x8 font
       case 48: bits = pgm_read_byte_near(&console_font_6x8[(chr * h) + i]); 
-        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_6x8[(chr * h) + i -1]);
+        if ((i>space) && drawShadow) bits_up = pgm_read_byte_near(&console_font_6x8[(chr * h) + i -1]);
         break;  // 6x8 font
       case 63: bits = pgm_read_byte_near(&console_font_7x9[(chr * h) + i]); 
-        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_7x9[(chr * h) + i -1]);
+        if ((i>space) && drawShadow) bits_up = pgm_read_byte_near(&console_font_7x9[(chr * h) + i -1]);
         break;  // 7x9 font
       case 60: bits = pgm_read_byte_near(&console_font_5x12[(chr * h) + i]); 
-        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_5x12[(chr * h) + i -1]);
+        if ((i>space) && drawShadow) bits_up = pgm_read_byte_near(&console_font_5x12[(chr * h) + i -1]);
         break; // 5x12 font
       default: return;
     }
@@ -965,7 +977,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
     uint32_t fgCol = uint32_t(col) & 0x00FFFFFF; // WLEDMM cache color value
 
     for (int j = 0; j<w; j++) { // character width
-      int16_t x0 = x + (w-1) - j;
+      int x0 = x + (w-1) - j;
       if (unsigned(x0) < cols) { // WLEDMM same as "x0 > 0 && x0 < cols"
         if ((bits>>(j+(8-w))) & 0x01) { // bit set & drawing on-screen
         setPixelColorXY(x0, y0, fgCol);

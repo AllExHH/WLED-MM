@@ -6810,9 +6810,15 @@ uint16_t mode_2Dscrollingtext(void) {
     case 5: letterWidth = 5; letterHeight = 12; break;
   }
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
-  char text[33] = {'\0'};
-  unsigned maxLen = (SEGMENT.name) ? min(32, (int)strlen(SEGMENT.name)) : 0;  // WLEDMM make it robust against too long segment names
-  if (SEGMENT.name) for (size_t i=0,j=0; i<maxLen; i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
+  char text[33] = {'\0'}; // ToDO use WLED_MAX_SEGNAME_LEN + 1
+  unsigned maxLen = (SEGMENT.name) ? min(32, (int)strlen(SEGMENT.name)) : 0;  // WLEDMM make it robust against too long segment names, ToDO use WLED_MAX_SEGNAME_LEN
+
+#if !defined(WLED_ENABLE_FULL_FONTS)
+  if (SEGMENT.name) for (size_t i=0,j=0; i<maxLen; i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i]; // unicode killer
+#else
+  if (SEGMENT.name) for (size_t i=0,j=0; i<maxLen; i++) text[j++] = SEGMENT.name[i]; // don't kill unicode
+#endif
+
   const bool zero = strchr(text, '0') != nullptr;
   bool drawShadow = (SEGMENT.check2); // "shadow" is only needed for overlays to improve readability
 
@@ -6859,6 +6865,7 @@ uint16_t mode_2Dscrollingtext(void) {
 
   long delayTime = long(strip.now) - long(SEGENV.step);
   if ((delayTime >= 0) || (abs(delayTime) > 1500)) {   // WLEDMM keep on scrolling if timebase jumps (supersync, or brightness off, or wifi delay)
+    //WLEDMM ToDO: adjust scolling logic for unicode (single UTF-8 letters need up to 4 chars)
     if ((numberOfLetters * letterWidth) > cols) ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + cols;      // offset
     else                                          SEGENV.aux0  = (cols + (numberOfLetters * letterWidth))/2;
     SEGENV.aux1 = (SEGENV.aux1 + 1) & 0xFF; // color shift // WLEDMM changed to prevent overflow
@@ -6875,6 +6882,7 @@ uint16_t mode_2Dscrollingtext(void) {
   }
 
   if (SEGENV.check2 && ((numberOfLetters * letterWidth) > cols)) drawShadow = true; // scrolling overlay is easier to read with shadow
+#if !defined(WLED_ENABLE_FULL_FONTS)
   for (int i = 0; i < numberOfLetters; i++) {
     if (int(cols) - int(SEGENV.aux0) + letterWidth*(i+1) < 0) continue; // don't draw characters off-screen
     uint32_t col1 = SEGMENT.color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0);
@@ -6885,6 +6893,15 @@ uint16_t mode_2Dscrollingtext(void) {
     }
     SEGMENT.drawCharacter(text[i], int(cols) - int(SEGENV.aux0) + letterWidth*i, yoffset, letterWidth, letterHeight, col1, col2, drawShadow);
   }
+#else
+  uint32_t col1 = SEGMENT.color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0);
+  uint32_t col2 = BLACK;
+  if (SEGMENT.check1 && SEGMENT.palette == 0) {
+    col1 = SEGCOLOR(0);
+    col2 = SEGCOLOR(2);
+  }
+  SEGMENT.drawText((unsigned char*)text, maxLen, numberOfLetters, int(cols) - int(SEGENV.aux0), yoffset, letterWidth, letterHeight, col1, col2, drawShadow);
+#endif
 
   return FRAMETIME;
 }
