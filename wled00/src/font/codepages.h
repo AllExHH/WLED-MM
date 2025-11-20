@@ -3,6 +3,11 @@
 #include <stdlib.h> // needed to get uint16_t definition
 #include <stdint.h> // helps for code analysis with clang
 
+// always disable unicode for 8266 builds - not enough program space
+#if !defined(ARDUINO_ARCH_ESP32) && defined(WLED_ENABLE_FULL_FONTS)
+#undef WLED_ENABLE_FULL_FONTS
+#endif
+
 //constexpr uint16_t UNKNOWN_CODE = 0x2219;  // ∙ multiplication dot
 constexpr uint16_t UNKNOWN_CODE = 0x00B7;   //  · middle dot
 constexpr uint16_t BAD_CODE     = 0x2022;   //  • bigger dot
