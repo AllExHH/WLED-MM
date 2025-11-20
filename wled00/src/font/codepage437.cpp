@@ -168,7 +168,7 @@ uint16_t wchar16ToCodepage437(uint16_t wideChar) {
     case 0x2321: return 0xF5; break; // ⌡
     case 0x00F7: return 0xF6; break; // ÷
     case 0x2248: return 0xF7; break; // ≈
-    case 0x00B0: return 0xF8; break; // °
+    case 0x00B0: return 0xF8; break; // ° degree
     case 0x2219: return 0xF9; break; // ∙ multiplication dot
     case 0x00B7: return 0xFA; break; // · middle dot
     case 0x221A: return 0xFB; break; // √
@@ -194,6 +194,7 @@ uint16_t wchar16ToCodepage437(uint16_t wideChar) {
     case 0x2300: return 237;  break; // diameter ⌀
     case 0x00D8: return 237;  break; // 0 strikethrough Ø
     case 0x00F8: return 237;  break; // 0 strikethrough small ø
+    case 0x02DA: return 0xF8; break; // small circle (up) ˚
     case 0x2208: return 238;  break; // element-of ∈
     case 0x017F: return 244;  break; // long S ſ
 
