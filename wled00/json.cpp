@@ -149,6 +149,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
       seg.name = new(std::nothrow) char[len+1];
       if (seg.name) strlcpy(seg.name, name, len+1);
     } else {
+      if (len > 0) { USER_PRINTF("! too-long segment name \"%s\" (%d chars) dropped.\n", name, len);}
       // but is empty (already deleted above)
       elem.remove("n");
     }

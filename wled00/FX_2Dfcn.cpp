@@ -899,7 +899,7 @@ void Segment::drawText(const unsigned char* text, size_t maxLen, int maxLetters,
   uint16_t decoded_text[WLED_MAX_SEGNAME_LEN+1] = { 0 };  // UTF-16 converted text. Cannot be longer than WLED_MAX_SEGNAME_LEN
   size_t utf16_index = 0;
   for(const unsigned char* now = text; now != nullptr && now[0] != '\0'; now = nextUnicode(now, maxLen)) {
-    if (utf16_index <= WLED_MAX_SEGNAME_LEN) {
+    if (utf16_index < WLED_MAX_SEGNAME_LEN) {
       decoded_text[utf16_index] = unicodeToWchar16(now, maxLen);                   // UTF-8 decode into decoded_text
       decoded_text[utf16_index] = wchar16ToCodepage437(decoded_text[utf16_index]); // decoded_text to CP437 (in-place conversion)
       // toDo: ensure that decoded_text[i] is between console_font_YxZ_first and console_font_YxZ_last
