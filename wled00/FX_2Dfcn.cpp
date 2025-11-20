@@ -921,11 +921,9 @@ void Segment::drawText(const unsigned char* text, size_t maxLen, int maxLetters,
 void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, bool drawShadow) {
   if (!isActive()) return; // not active
 #if !defined(WLED_ENABLE_FULL_FONTS)
-  constexpr int space = 0; // font index of " " (space)
   if (chr < 32 || chr > 126) return; // legacy mode - only ASCII 32-126 supported
   chr -= 32; // align with font table entries
 #else
-  constexpr int space = 31; // font index of " "
   // ToDO: clamp to actual font limits
   if (chr < 1 || chr > 254) return; // sanity check // ToDO needs improvements 
   chr = chr -1; // all fonts start at 1  // ToDO needs improvements
