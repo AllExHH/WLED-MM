@@ -882,6 +882,27 @@ bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
 #include "src/font/console_font_5x12.h"
 #include "src/font/console_font_6x8.h"
 #include "src/font/console_font_7x9.h"
+#if defined(WLED_ENABLE_FULL_FONTS)
+#include "src/font/codepages.h"
+#endif
+
+//upstream compatibility
+#if !defined(WLED_MAX_SEGNAME_LEN)
+#define WLED_MAX_SEGNAME_LEN 32 // ToDO: inrease default to 48
+#endif
+
+// unicode-aware wrapper for drawCharacter(), to be called from  mode_2Dscrollingtext()
+void Segment::drawText(const unsigned char* text, size_t maxLen, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, bool drawShadow) {
+  size_t textLength = min(maxLen, size_t(WLED_MAX_SEGNAME_LEN));
+#if defined(WLED_ENABLE_FULL_FONTS)
+  uint16_t decoded_text[WLED_MAX_SEGNAME_LEN+1] = { 0 };  // UTF-16 converted text. Cannot be longer than WLED_MAX_SEGNAME_LEN
+  // ToDO: UTF-8 decode text into local buffer => decoded_text
+  // ToDO: decoded_text to CP437  => decoded_text (in-place conversion)
+#else
+  const unsigned char* decoded_text = text;  // fallback
+#endif
+  // ToDO: pass decoded characters to drawCharacter()
+}
 
 // draws a raster font character on canvas
 // only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
