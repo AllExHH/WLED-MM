@@ -819,7 +819,7 @@ class JMapC {
         USER_PRINT(dataSize);
         USER_PRINT(" scale ");
         USER_PRINTLN(scale);
-        strcpy(previousSegmentName, SEGMENT.name);
+        strlcpy(previousSegmentName, SEGMENT.name, sizeof(previousSegmentName));
       }
     } //updatejMapDoc
 }; //class JMapC
