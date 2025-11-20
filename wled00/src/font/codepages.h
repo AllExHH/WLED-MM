@@ -16,6 +16,9 @@ uint16_t unicodeToWchar16(const unsigned char* utf8, size_t maxLen);           /
 // return nullptr at end of input
 const unsigned char* nextUnicode(const unsigned char* utf8, size_t maxLen);    // unicodetool.cpp
 
+// unicode-aware string length
+size_t strlenUC(const unsigned char* utf8);
+
 // translates unicode 2-byte (UTF-16) "code point" into corresponding character in codepage 437 (IBM PC aka PC-8)
 uint16_t wchar16ToCodepage437(uint16_t wideChar);                              // codepage437.cpp
 

@@ -72,4 +72,15 @@ const unsigned char* nextUnicode(const unsigned char* utf8, size_t maxLen) {
   else return utf8 + codeLength;                               // success: advance stream
 }
 
+// unicode-aware string length
+size_t strlenUC(const unsigned char* utf8) {
+  if ((utf8 == nullptr) || (utf8[0] == '\0')) return 0;
+  size_t maxLen = strlen((const char *)utf8);
+  size_t letters = 0;
+  for(const unsigned char* now = utf8; now != nullptr && now[0] != '\0'; now = nextUnicode(now, maxLen)) // iterates over utf-8 and count letters
+    letters++;
+
+  return letters;
+}
+
 #endif

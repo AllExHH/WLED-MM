@@ -10,6 +10,10 @@
 #include "FX.h"
 #include "fcn_declare.h"
 
+#if defined(WLED_ENABLE_FULL_FONTS)
+#include "src/font/codepages.h"
+#endif
+
 #ifdef WLEDMM_FASTPATH
 #undef SEGMENT
 #undef SEGENV
@@ -6861,11 +6865,16 @@ uint16_t mode_2Dscrollingtext(void) {
     else if ((!strncmp_P(text,PSTR("#AMP"),4)) || (!strncmp_P(text,PSTR("#POW"),4))) sprintf_P(text, PSTR("%3.1fA"), float(strip.currentMilliamps)/1000.0f); // WLEDMM
     else sprintf_P(text, PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
   } else drawShadow = false;  // static text does not require shadow
-  const int numberOfLetters = strlen(text);
+
+  const int numberOfChars = strlen(text);
+#if defined(WLED_ENABLE_FULL_FONTS)
+  const int numberOfLetters = strlenUC((unsigned char *)text); // get the mumber of unicode letters
+#else
+  const int numberOfLetters = numberOfChars;
+#endif
 
   long delayTime = long(strip.now) - long(SEGENV.step);
   if ((delayTime >= 0) || (abs(delayTime) > 1500)) {   // WLEDMM keep on scrolling if timebase jumps (supersync, or brightness off, or wifi delay)
-    //WLEDMM ToDO: adjust scolling logic for unicode (single UTF-8 letters need up to 4 chars)
     if ((numberOfLetters * letterWidth) > cols) ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + cols;      // offset
     else                                          SEGENV.aux0  = (cols + (numberOfLetters * letterWidth))/2;
     SEGENV.aux1 = (SEGENV.aux1 + 1) & 0xFF; // color shift // WLEDMM changed to prevent overflow
@@ -6900,12 +6909,12 @@ uint16_t mode_2Dscrollingtext(void) {
     col1 = SEGCOLOR(0);
     col2 = SEGCOLOR(2);
   }
-  SEGMENT.drawText((unsigned char*)text, maxLen, numberOfLetters, int(cols) - int(SEGENV.aux0), yoffset, letterWidth, letterHeight, col1, col2, drawShadow);
+  SEGMENT.drawText((unsigned char*)text, maxLen, numberOfChars, int(cols) - int(SEGENV.aux0), yoffset, letterWidth, letterHeight, col1, col2, drawShadow);
 #endif
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size,,Gradient,Overlay;!,!,Gradient;!;2;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0";
+static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size,,Gradient,Overlay,Soft;!,!,Gradient;!;2;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0";
 
 
 ////////////////////////////
