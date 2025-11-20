@@ -952,19 +952,19 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
 
     switch (font) { // font = w * h
       case 24: bits = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]);
-        if ((i>space) && drawShadow) bits_up = pgm_read_byte_near(&console_font_4x6[(chr * h) + i -1]);
+        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_4x6[(chr * h) + i -1]);
         break;  // 4x6 font
       case 40: bits = pgm_read_byte_near(&console_font_5x8[(chr * h) + i]); 
-        if ((i>space) && drawShadow) bits_up = pgm_read_byte_near(&console_font_5x8[(chr * h) + i -1]);
+        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_5x8[(chr * h) + i -1]);
         break;  // 5x8 font
       case 48: bits = pgm_read_byte_near(&console_font_6x8[(chr * h) + i]); 
-        if ((i>space) && drawShadow) bits_up = pgm_read_byte_near(&console_font_6x8[(chr * h) + i -1]);
+        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_6x8[(chr * h) + i -1]);
         break;  // 6x8 font
       case 63: bits = pgm_read_byte_near(&console_font_7x9[(chr * h) + i]); 
-        if ((i>space) && drawShadow) bits_up = pgm_read_byte_near(&console_font_7x9[(chr * h) + i -1]);
+        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_7x9[(chr * h) + i -1]);
         break;  // 7x9 font
       case 60: bits = pgm_read_byte_near(&console_font_5x12[(chr * h) + i]); 
-        if ((i>space) && drawShadow) bits_up = pgm_read_byte_near(&console_font_5x12[(chr * h) + i -1]);
+        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_5x12[(chr * h) + i -1]);
         break; // 5x12 font
       default: return;
     }
