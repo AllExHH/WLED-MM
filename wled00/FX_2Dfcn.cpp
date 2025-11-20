@@ -894,10 +894,19 @@ bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
 // unicode-aware wrapper for drawCharacter(), to be called from  mode_2Dscrollingtext()
 void Segment::drawText(const unsigned char* text, size_t maxLen, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, bool drawShadow) {
   size_t textLength = min(maxLen, size_t(WLED_MAX_SEGNAME_LEN));
+  // ToDO: find font _first/_last, based on width / height
 #if defined(WLED_ENABLE_FULL_FONTS)
   uint16_t decoded_text[WLED_MAX_SEGNAME_LEN+1] = { 0 };  // UTF-16 converted text. Cannot be longer than WLED_MAX_SEGNAME_LEN
-  // ToDO: UTF-8 decode text into local buffer => decoded_text
-  // ToDO: decoded_text to CP437  => decoded_text (in-place conversion)
+  size_t utf16_index = 0;
+  for(const unsigned char* now = text; now != nullptr && now[0] != 0; now = nextUnicode(now, maxLen)) {
+    decoded_text[utf16_index] = unicodeToWchar16(now, maxLen);                   // UTF-8 decode into decoded_text
+    decoded_text[utf16_index] = wchar16ToCodepage437(decoded_text[utf16_index]); // decoded_text to CP437 (in-place conversion)
+    // toDo: ensure that decoded_text[i] is between console_font_YxZ_first and console_font_YxZ_last
+      // if (chr < 32 || chr > 126) --> clamp chr
+      // chr -= 32; // align with font table entries
+    utf16_index++;
+  }
+  decoded_text[utf16_index] = 0; // NUL terminate string
 #else
   const unsigned char* decoded_text = text;  // fallback
 #endif
@@ -908,8 +917,13 @@ void Segment::drawText(const unsigned char* text, size_t maxLen, int16_t x, int1
 // only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
 void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, bool drawShadow) {
   if (!isActive()) return; // not active
-  if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
+#if !defined(WLED_ENABLE_FULL_FONTS)
+  if (chr < 32 || chr > 126) return; // legacy mode - only ASCII 32-126 supported
   chr -= 32; // align with font table entries
+#else
+  // ToDO: clamp to font limits
+#endif
+
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   const int font = w*h;
@@ -926,7 +940,10 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
     if (y0 >= rows) break; // drawing off-screen
     uint8_t bits = 0;
     uint8_t bits_up = 0; // WLEDMM this is the previous line: font[(chr * h) + i -1]
-    switch (font) {
+
+    // ToDO: move font selection logic into separate function
+
+    switch (font) { // font = w * h
       case 24: bits = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]);
         if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_4x6[(chr * h) + i -1]);
         break;  // 5x8 font
