@@ -214,7 +214,7 @@ bool appendObjectToFile(const char* key, JsonDocument* content, uint32_t s, uint
   if (!f) return false;
 
   if (f.size() < 3) {
-    char init[10];
+    char init[12];
     strcpy_P(init, PSTR("{\"0\":{}}"));
     f.print(init);
   }
@@ -285,7 +285,7 @@ bool appendObjectToFile(const char* key, JsonDocument* content, uint32_t s, uint
 
 bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* content)
 {
-  char objKey[10];
+  char objKey[12];
   sprintf(objKey, "\"%d\":", id);
   return writeObjectToFile(file, objKey, content);
 }
@@ -360,7 +360,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
 
 bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest)
 {
-  char objKey[10];
+  char objKey[12];
   sprintf(objKey, "\"%d\":", id);
   return readObjectFromFile(file, objKey, dest);
 }
