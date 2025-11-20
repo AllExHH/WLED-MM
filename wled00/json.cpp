@@ -151,8 +151,8 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     if (name != nullptr) len = strlen(name);
     if (len > 0) {
       // WLEDMM: truncate segment name, instead of silently deleting
-      if (len > 32) { // ToDO: use WLED_MAX_SEGNAME_LEN
-        len = 32;     // cut to max segment name length
+      if (len > WLED_MAX_SEGNAME_LEN) {
+        len = WLED_MAX_SEGNAME_LEN;     // cut to max segment name length
         #if defined(WLED_ENABLE_FULL_FONTS)
         if (name[len] > 127) // UTF-8 => don't cut in the middle of a multi-byte char
           len = cutUnicodeAt((unsigned char*)name, len-1) +1; // +1 to convert between index and length

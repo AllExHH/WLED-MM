@@ -698,7 +698,7 @@ struct ArrayAndSize {
 };
 class JMapC {
   public:
-    char previousSegmentName[50] = "";
+    char previousSegmentName[WLED_MAX_SEGNAME_LEN+12] = "";
 
     ~JMapC() {
       DEBUG_PRINTLN("~JMapC");
@@ -751,7 +751,7 @@ class JMapC {
         uint32_t dataSize = 0;
         deletejVectorMap();
         DEBUG_PRINT("New "); DEBUG_PRINTLN(SEGMENT.name);
-        char jMapFileName[50] = {'\0'}; // we need at most 32 + 7 bytes
+        char jMapFileName[WLED_MAX_SEGNAME_LEN+12] = {'\0'}; // we need at most 32 + 7 bytes
         strcpy(jMapFileName, "/");
         strcat(jMapFileName, SEGMENT.name);
         strcat(jMapFileName, ".json");
@@ -1728,22 +1728,22 @@ void WS2812FX::enumerateLedmaps() {
         f = WLED_FS.open(fileName, "r");
         if (f) {
           f.find("\"n\":");
-          char name[34] = { '\0' };  // ensure string termination
+          char name[WLED_MAX_SEGNAME_LEN+2] = { '\0' };  // ensure string termination
           f.readBytesUntil('\n', name, sizeof(name)-1);
 
           size_t len = strlen(name);
-          if (len > 0 && len < 33) {
+          if (len > 0 && len < (sizeof(name)-1)) {
             (void) cleanUpName(name);
             len = strlen(name);
             ledmapNames[i-1] = new(std::nothrow) char[len+1]; // +1 to include terminating \0 
-            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
+            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, sizeof(name));
           }
           if (!ledmapNames[i-1]) {
             char tmp[33];
             snprintf_P(tmp, 32, PSTR("ledmap%d.json"), i);
-            len = strlen(tmp);
-            ledmapNames[i-1] = new(std::nothrow) char[len+1];
-            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
+            size_t tmplen = strlen(tmp);
+            ledmapNames[i-1] = new(std::nothrow) char[tmplen+1];
+            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, tmplen);
           }
 
           USER_PRINTF("enumerateLedmaps %s \"%s\"", fileName, name);
@@ -1779,7 +1779,7 @@ void WS2812FX::enumerateLedmaps() {
   uint8_t segment_index = 0;
   for (segment &seg : _segments) {
     if (seg.name != nullptr && strlen(seg.name) > 0) {
-      char fileName[33+11] = { '\0' }; // segment name is 32 chars max, so we need 43 chars in worst case
+      char fileName[WLED_MAX_SEGNAME_LEN+12] = { '\0' }; // segment name is 32 chars max, so we need 43 chars in worst case
       snprintf_P(fileName, sizeof(fileName)-1, PSTR("/lm%s.json"), seg.name);
       bool isFile = WLED_FS.exists(fileName);
       if (isFile) ledMaps |= 1 << (10+segment_index);
@@ -2587,7 +2587,7 @@ void WS2812FX::loadCustomPalettes() {
 bool WS2812FX::deserializeMap(uint8_t n) {
   // 2D support creates its own ledmap (on the fly) if a ledmap.json exists it will overwrite built one.
 
-  char fileName[42] = {'\0'}; // WLEDMM we need at least 32 + 7 bytes
+  char fileName[WLED_MAX_SEGNAME_LEN+10] = {'\0'}; // WLEDMM we need at least 32 + 7 bytes
   //WLEDMM: als support segment name ledmaps
   bool isFile = false;;
   if (n<10) {

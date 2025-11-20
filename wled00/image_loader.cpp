@@ -5,11 +5,6 @@
 #include "GifDecoder.h"
 
 
-//upstream compatibility
-#if !defined(WLED_MAX_SEGNAME_LEN)
-#define WLED_MAX_SEGNAME_LEN 32
-#endif
-
 /*
  * Functions to render images from filesystem to segments, used by the "Image" effect
  */

@@ -842,7 +842,7 @@ void Segment::drawArc(unsigned x0, unsigned y0, int radius, uint32_t color, uint
 //WLEDMM for artifx
 bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
   if (!isActive()) return true; // segment not active, nothing to do
-  char fileName[42] = { '\0' }; // we need up to 40 bytes (seg.name is 32 bytes max)
+  char fileName[WLED_MAX_SEGNAME_LEN+12] = { '\0' }; // we need up to 40 bytes (seg.name is 32 bytes max)
   //WLEDMM: als support segment name ledmaps
   bool isFile = false;
   // strcpy_P(fileName, PSTR("/mario"));
@@ -884,11 +884,6 @@ bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
 #include "src/font/console_font_7x9.h"
 #if defined(WLED_ENABLE_FULL_FONTS)
 #include "src/font/codepages.h"
-#endif
-
-//upstream compatibility
-#if !defined(WLED_MAX_SEGNAME_LEN)
-#define WLED_MAX_SEGNAME_LEN 32 // ToDO: inrease default to 48
 #endif
 
 // unicode-aware wrapper for drawCharacter(), to be called from  mode_2Dscrollingtext()
