@@ -6910,6 +6910,7 @@ uint16_t mode_2Dscrollingtext(void) {
     col1 = SEGCOLOR(0);
     col2 = SEGCOLOR(2);
   }
+  maxLen = numberOfChars; // Ensure maxLen reflects the actual rendered text, not the original SEGMENT.name // ToDO remove double parameter
   SEGMENT.drawText((unsigned char*)text, maxLen, numberOfChars, int(cols) - int(SEGENV.aux0), yoffset, letterWidth, letterHeight, col1, col2, drawShadow);
 #endif
 
