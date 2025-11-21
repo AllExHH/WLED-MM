@@ -1,11 +1,11 @@
-#if defined(WLED_ENABLE_FULL_FONTS)
-
 /* 
    @title     WLED(-MM) - unicode to CP437 conversion
    @repo      https://github.com/MoonModules/WLED-MM, https://github.com/wled/WLED
    @Copyright © 2025 Github WLED and WLED-MM Commit Authors (see "git blame" for details)
    @license   Licensed under the EUPL-1.2 or later
 */
+
+#if defined(WLED_ENABLE_FULL_FONTS)
 
 #include "codepages.h"
 #include <string.h>

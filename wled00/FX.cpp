@@ -6817,7 +6817,7 @@ uint16_t mode_2Dscrollingtext(void) {
   char text[WLED_MAX_SEGNAME_LEN+1] = {'\0'};
   unsigned maxLen = (SEGMENT.name) ? min(WLED_MAX_SEGNAME_LEN, (int)strlen(SEGMENT.name)) : 0;  // WLEDMM make it robust against too long segment names
 
-#if !defined(WLED_ENABLE_FULL_FONTS)
+#if !defined(WLED_ENABLE_FULL_FONTS) || defined(ESP8266)
   if (SEGMENT.name) for (size_t i=0,j=0; i<maxLen; i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i]; // unicode killer
 #else
   if (SEGMENT.name) for (size_t i=0,j=0; i<maxLen; i++) text[j++] = SEGMENT.name[i]; // don't kill unicode
@@ -6865,12 +6865,12 @@ uint16_t mode_2Dscrollingtext(void) {
     else if ((!strncmp_P(text,PSTR("#AMP"),4)) || (!strncmp_P(text,PSTR("#POW"),4))) sprintf_P(text, PSTR("%3.1fA"), float(strip.currentMilliamps)/1000.0f); // WLEDMM
     else sprintf_P(text, PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
   } else drawShadow = false;  // static text does not require shadow
+  const int numberOfChars = strlen(text); // bytes count after macros expansions
 
-  const int numberOfChars = strlen(text);
-#if defined(WLED_ENABLE_FULL_FONTS)
-  const int numberOfLetters = strlenUC((unsigned char *)text); // get the mumber of unicode letters
-#else
+#if !defined(WLED_ENABLE_FULL_FONTS) || defined(ESP8266)
   const int numberOfLetters = numberOfChars;
+#else
+  const int numberOfLetters = strlenUC((unsigned char *)text); // get the mumber of unicode letters
 #endif
 
   long delayTime = long(strip.now) - long(SEGENV.step);
@@ -6910,13 +6910,13 @@ uint16_t mode_2Dscrollingtext(void) {
     col1 = SEGCOLOR(0);
     col2 = SEGCOLOR(2);
   }
-  maxLen = numberOfChars; // Ensure maxLen reflects the actual rendered text, not the original SEGMENT.name // ToDO remove double parameter
-  SEGMENT.drawText((unsigned char*)text, maxLen, numberOfChars, int(cols) - int(SEGENV.aux0), yoffset, letterWidth, letterHeight, col1, col2, drawShadow);
+  maxLen = numberOfChars; // Ensure maxLen reflects the actual rendered text, not the original SEGMENT.name length
+  SEGMENT.drawText((unsigned char*)text, maxLen, int(cols) - int(SEGENV.aux0), yoffset, letterWidth, letterHeight, col1, col2, drawShadow);
 #endif
 
   // WLEDMM add some blur
-  if (SEGMENT.check3) {
-    if (SEGMENT.custom1 < 16) SEGMENT.blurRows(16); // only blur if no trail
+  if (SEGMENT.check3 && !SEGMENT.check2) { // blur looks ugly together with "overlay"
+    if (SEGMENT.custom1 < 16) SEGMENT.blurRows(16); // only blur rows when no trail
     SEGMENT.blurCols(20);
   }
 

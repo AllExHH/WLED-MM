@@ -877,41 +877,35 @@ bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
   return true;
 }
 
-#include "src/font/console_font_4x6.h"
-#include "src/font/console_font_5x8.h"
-#include "src/font/console_font_5x12.h"
-#include "src/font/console_font_6x8.h"
-#include "src/font/console_font_7x9.h"
+#include "wled_fonts.hpp"
 #if defined(WLED_ENABLE_FULL_FONTS)
 #include "src/font/codepages.h"
 #endif
 
 // unicode-aware wrapper for drawCharacter(), to be called from  mode_2Dscrollingtext()
-void Segment::drawText(const unsigned char* text, size_t maxLen, int maxLetters, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, bool drawShadow) {
+void Segment::drawText(const unsigned char* text, size_t maxLen, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, bool drawShadow) {
   if (!isActive()) return; // not active
-  // ToDO: find font _first/_last, based on width / height
+  //size_t maxLetters = WLED_MAX_SEGNAME_LEN;
+  const size_t numberOfChars = strlen((const char *) text); // size in bytes // toDo check if this is duplicate -> maxLen
+
 #if defined(WLED_ENABLE_FULL_FONTS)
+  FontInfo_t font = getFontInfo(w, h);                    // use central font selection legic
   uint16_t decoded_text[WLED_MAX_SEGNAME_LEN+1] = { 0 };  // UTF-16 converted text. Cannot be longer than WLED_MAX_SEGNAME_LEN
   size_t utf16_index = 0;
   for(const unsigned char* now = text; now != nullptr && now[0] != '\0'; now = nextUnicode(now, maxLen)) {
     if (utf16_index < WLED_MAX_SEGNAME_LEN) {
       decoded_text[utf16_index] = unicodeToWchar16(now, maxLen);                   // UTF-8 decode into decoded_text
       decoded_text[utf16_index] = wchar16ToCodepage437(decoded_text[utf16_index]); // decoded_text to CP437 (in-place conversion)
-      if ((decoded_text[utf16_index] >= 1) && ((decoded_text[utf16_index] <= 254))) utf16_index++; // don't advance on NUL or codes not suppoted in DrawCharacter
+      if ((decoded_text[utf16_index] >= font.firstChar) && ((decoded_text[utf16_index] <= font.lastChar))) // don't advance on NUL, or on codes not suppoted in DrawCharacter
+        utf16_index++;
     }
   }
   decoded_text[utf16_index] = 0; // NUL terminate string
-  size_t textLength = min(utf16_index, size_t(maxLetters));
-
+  size_t textLength = min(utf16_index, numberOfChars);
 #else
   const unsigned char* decoded_text = text;  // fallback
-  size_t textLength = min(strnlen((char*)text, maxLen), size_t(maxLetters));  
+  size_t textLength = min(strnlen((char*)text, maxLen), numberOfChars);
 #endif
-
-  // toDo: ensure that decoded_text[i] is between console_font_YxZ_first and console_font_YxZ_last
-    // if (chr < 32 || chr > 126) --> clamp chr
-    // chr -= 32; // align with font table entries
-
   // pass characters to drawCharacter()
   for (int i = 0; i < textLength; i++) {
     SEGMENT.drawCharacter((unsigned char) decoded_text[i], x + w*i, y, w, h, color, col2, drawShadow);
@@ -922,18 +916,12 @@ void Segment::drawText(const unsigned char* text, size_t maxLen, int maxLetters,
 // only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
 void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, bool drawShadow) {
   if (!isActive()) return; // not active
-#if !defined(WLED_ENABLE_FULL_FONTS)
-  if (chr < 32 || chr > 126) return; // legacy mode - only ASCII 32-126 supported
-  chr -= 32; // align with font table entries
-#else
-  // ToDO: clamp to actual font limits
-  if (chr < 1 || chr > 254) return; // sanity check // ToDO needs improvements 
-  chr = chr -1; // all fonts start at 1  // ToDO needs improvements
-#endif
-
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
-  const int font = w*h;
+  FontInfo_t font = getFontInfo(w, h);                      // use central font selection logic
+  if (!font.isProgMem || font.width_bytes > 1) return;      // do nothing for not (yet) supported font features: width_bytes > 1, !isProgMem
+  if (chr < font.firstChar || chr > font.lastChar) return;  // do nothing when out of limits
+  chr = chr - font.firstChar;                               // adjust chr to point to the first allowed character byte
 
   CRGB col = CRGB(color);
   CRGBPalette16 grad = CRGBPalette16(col, (col2 != BLACK) ? CRGB(col2) : col);
@@ -941,16 +929,21 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
 
   //if (w<5 || w>6 || h!=8) return;
   if (drawShadow) w++; // one more column for shadow on right side
-  for (int i = 0; i<h; i++) { // character height
+  for (int i = 0; i<h; i++) { //  // paint character - top down by row (height)
     int y0 = y + i;
     if (y0 < 0) continue; // drawing off-screen
     if (y0 >= rows) break; // drawing off-screen
     uint8_t bits = 0;
     uint8_t bits_up = 0; // WLEDMM this is the previous line: font[(chr * h) + i -1]
 
-    // ToDO: move font selection logic into separate function
-
-    switch (font) { // font = w * h
+#if 1
+    // new code - experimental
+    bits = pgm_read_byte_near(&font.raw[(chr * h) + i]);
+    if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&font.raw[(chr * h) + i -1]);
+#else
+  // legacy code, will be deleted after some tests
+    int pixels = w*h; 
+    switch (pixels) { // font = w * h
       case 24: bits = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]);
         if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_4x6[(chr * h) + i -1]);
         break;  // 4x6 font
@@ -968,17 +961,18 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
         break; // 5x12 font
       default: return;
     }
+#endif
     if (col2 != BLACK) col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
     uint32_t fgCol = uint32_t(col) & 0x00FFFFFF; // WLEDMM cache color value
 
-    for (int j = 0; j<w; j++) { // character width
+    for (int j = 0; j<w; j++) { // paint character - single row of pixels (width)
       int x0 = x + (w-1) - j;
       if (unsigned(x0) < cols) { // WLEDMM same as "x0 > 0 && x0 < cols"
         if ((bits>>(j+(8-w))) & 0x01) { // bit set & drawing on-screen
         setPixelColorXY(x0, y0, fgCol);
         } else {
           if (drawShadow) {
-			// WLEDMM
+			      // WLEDMM
             if ((j < (w-1)) && (bits>>(j+(8-w) +1)) & 0x01) setPixelColorXY(x0, y0, bgCol); // blank when pixel to the right is set
             else if ((j > 0) && (bits>>(j+(8-w) -1)) & 0x01) setPixelColorXY(x0, y0, bgCol);// blank when pixel to the left is set
             else if ((bits_up>>(j+(8-w))) & 0x01) setPixelColorXY(x0, y0, bgCol);           // blank when pixel above is set
