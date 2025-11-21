@@ -1,5 +1,12 @@
 #if defined(WLED_ENABLE_FULL_FONTS)
 
+/* 
+   @title     WLED(-MM) - unicode to CP437 conversion
+   @repo      https://github.com/MoonModules/WLED-MM, https://github.com/wled/WLED
+   @Copyright © 2025 Github WLED and WLED-MM Commit Authors (see "git blame" for details)
+   @license   Licensed under the EUPL-1.2 or later
+*/
+
 #include "codepages.h"
 #include <string.h>
 
@@ -9,11 +16,18 @@ constexpr uint8_t CP437_UNKNOWN = 250; // small middle dot · // not sure if we 
 // based on a table from https://en.wikipedia.org/wiki/Code_page_437#Character_set
 uint16_t wchar16ToCodepage437(uint16_t wideChar) {
 
-  // codes up to 126 are same as ASCII
-  if (wideChar < 127) return wideChar; 
+  // unicode codes 0 up to 127 are same as ASCII -> pass through
+  if ((wideChar < 0x7F) && (wideChar != 0x08)) return wideChar; // excludes 127 = DEL and 8 = BS, so we can map them
 
   switch (wideChar) {
-    // characters 1 - 31
+    // original IBM PC would interpret codes 0x07, 0x08, 0x0A, and 0x0D as BEL, BS, LF, and CR, respectively. 
+    // we don't implement any special handling at the moment
+    case 0x0008: return 0x08; break; // Backspace: pass through (could be handled differently in future)
+
+    //  unicode codes mapped to characters 1 - 31
+    // unicode 0 = C string terminator -> already passed through, never map it !!
+    // 1 to 31 (0x01 to 0x1F) are "assorted dingbats" (complementary and decorative characters). 
+    // The isolated character 127 (7Fhex) also belongs to this group.
     case 0x263A: return 0x01; break; // ☺︎
     case 0x263B: return 0x02; break; // ☻
     case 0x2665: return 0x03; break; // ♥︎
@@ -46,8 +60,13 @@ uint16_t wchar16ToCodepage437(uint16_t wideChar) {
     case 0x25B2: return 0x1E; break; // ▲
     case 0x25BC: return 0x1F; break; // ▼
 
-    // characters 127 - 254
-    case 0x2302: return 0x7F; break; // ⌂ (aka DEL)
+    //  unicode codes 32 to 126 (0x20 to 0x7E) are the standard ASCII printable characters -> already passed through
+
+    //  unicode codes mapped to characters 127 - 254
+    // code 127 DEL -> small arrow back. We don't implement legacy "rubout" or "backspace" for composing letters or for bold printing
+    case 0x007F: return 0x1B; break; // ←
+    case 0x2302: return 0x7F; break; // ⌂
+    // 128 to 175 (0x80 to 0xAF) are a selection of international text characters
     case 0x00C7: return 0x80; break; // Ç
     case 0x00FC: return 0x81; break; // ü
     case 0x00E9: return 0x82; break; // é
@@ -96,6 +115,7 @@ uint16_t wchar16ToCodepage437(uint16_t wideChar) {
     case 0x00A1: return 0xAD; break; // ¡
     case 0x00AB: return 0xAE; break; // «
     case 0x00BB: return 0xAF; break; // »
+    // 176 to 223 (0xB0 to 0xDF) are box drawing and block characters
     case 0x2591: return 0xB0; break; // ░
     case 0x2592: return 0xB1; break; // ▒
     case 0x2593: return 0xB2; break; // ▓
@@ -144,6 +164,7 @@ uint16_t wchar16ToCodepage437(uint16_t wideChar) {
     case 0x258C: return 0xDD; break; // ▌
     case 0x2590: return 0xDE; break; // ▐
     case 0x2580: return 0xDF; break; // ▀
+    // 224 to 235 (0xE0 to 0xEB) are math symbols part 1 - Greek letters commonly used in physics
     case 0x03B1: return 0xE0; break; // α
     case 0x00DF: return 0xE1; break; // ß
     case 0x0393: return 0xE2; break; // Γ
@@ -156,6 +177,7 @@ uint16_t wchar16ToCodepage437(uint16_t wideChar) {
     case 0x0398: return 0xE9; break; // Θ
     case 0x03A9: return 0xEA; break; // Ω
     case 0x03B4: return 0xEB; break; // δ
+    // 236 to 254 (0xEC to 0xFE) are other common physics and math symbols
     case 0x221E: return 0xEC; break; // ∞
     case 0x03C6: return 0xED; break; // φ
     case 0x03B5: return 0xEE; break; // ε
@@ -174,14 +196,16 @@ uint16_t wchar16ToCodepage437(uint16_t wideChar) {
     case 0x221A: return 0xFB; break; // √
     case 0x207F: return 0xFC; break; // ⁿ
     case 0x00B2: return 0xFD; break; // ²
-    case 0x25A0: return 0xFE; break; // ■
+    case 0x25A0: return 0xFE; break; // ■ geometric shapes
+    // 255 (0xFF) is "non breakable space" (NBSP)
+    case 0x00A0: return 32;   break; // NBSP -> normal "space"
 
-    // special mappings for very similar characters
-    case 0x00A6: return 0x7C; break; // broken bar -> bar
-    case 0x266C: return 14;   break; // musical notes 
-    case 0x0394: return 127;  break; // greek capital delta Δ
+    // special mappings for very similar unicode characters
+    case 0x00A6: return 0x7C; break; // ¦ broken bar -> | bar
+    case 0x266C: return 14;   break; // musical note ♬ -> ♫
+    case 0x0394: return 127;  break; // greek capital delta Δ -> ⌂
     case 0x23AE: return 179;  break; // integral extension ⎮
-    case 0x03B2: return 225;  break; // greek small beta β => sz umlaut ß
+    case 0x03B2: return 225;  break; // greek small beta β -> sz umlaut ß
     case 0x03A0: return 227;  break; // greek capital PI Π
     case 0x220F: return 227;  break; // math product ∏
     case 0x2211: return 228;  break; // math sum ∑
@@ -194,13 +218,13 @@ uint16_t wchar16ToCodepage437(uint16_t wideChar) {
     case 0x2300: return 237;  break; // diameter ⌀
     case 0x00D8: return 237;  break; // 0 strikethrough Ø
     case 0x00F8: return 237;  break; // 0 strikethrough small ø
-    case 0x02DA: return 0xF8; break; // small circle (up) ˚
-    case 0x2208: return 238;  break; // element-of ∈
     case 0x017F: return 244;  break; // long S ſ
+    case 0x02DA: return 0xF8; break; // small circle (up) ˚
 
-    case 0x00A0: return 32;   break; // NBSP => blank
-    case 0x20AC: return 238;  break; // Euro €
-    case 0x2713: return 251;  break; // check mark ✓
+    case 0x2208: return 238;  break; // element-of ∈ -> ε
+    case 0x20AC: return 238;  break; // Euro € -> ε
+    case 0x2713: return 251;  break; // check mark ✓ -> √
+    case 0x263E: return 0x01; break; // ☾ last quarter moon (Moonmodules) -> ☺︎ face
 
     // everything else: unknown
     //default: return 32; // blank

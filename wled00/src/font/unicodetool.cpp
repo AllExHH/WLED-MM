@@ -1,4 +1,9 @@
-#if defined(WLED_ENABLE_FULL_FONTS)
+/* 
+   @title     WLED(-MM) - unicode helper functions
+   @repo      https://github.com/MoonModules/WLED-MM, https://github.com/wled/WLED
+   @Copyright © 2025 Github WLED and WLED-MM Commit Authors (see "git blame" for details)
+   @license   Licensed under the EUPL-1.2 or later
+*/
 
 #include "codepages.h"
 #include <string.h>
@@ -35,13 +40,15 @@ uint16_t unicodeToWchar16(const unsigned char* utf8, size_t maxLen) {
       if (length < 3 || !isValidContinuation(utf8[1]) || !isValidContinuation(utf8[2])) return BAD_CODE; // malformed
       codepoint = ((ch0 & 0b00001111) << 12) | ((utf8[1] & 0b00111111) << 6) | (utf8[2] & 0b00111111);
       if (codepoint < 0x800) return UNKNOWN_CODE;                          // Reject overlong encodings (must be >= 0x800)
-      if (codepoint >= 0xD800 && codepoint <= 0xDFFF) return UNKNOWN_CODE; // Reject UTF-16 surrogate pairs (U+D800..U+DFFF)
-      if (codepoint >= 0x010000) codepoint = UNKNOWN_CODE;                 // result exceeds uint16_t => "unknown"
+      if (codepoint >= 0xD800 && codepoint <= 0xDFFF) return  EXT_CODE;    // Reject UTF-16 surrogate pairs (U+D800..U+DFFF)
+      if (codepoint >= 0x010000) codepoint =  EXT_CODE;                    // result exceeds uint16_t (should not happen with well-formed UTF-8)
       return uint16_t(codepoint);
     }
   }
-  // 4-byte sequence or invalid lead byte - since we only support up to 0xFFFF, return error marker
-  return BAD_CODE; // unsupported/invalid
+
+  // since we only support up to 0xFFFF, return error marker
+  if ((ch0 & 0b11111000) == 0b11110000) return EXT_CODE; // unsupported 4-byte sequence
+  else return BAD_CODE;  // other unsupported/invalid
 }
 
 // returns a pointer to the next unicode item - can be used to "advance" conversion after unicodeToWchar16()
@@ -99,5 +106,3 @@ size_t cutUnicodeAt(const unsigned char* utf8, size_t where) {
   if (utf8[where] > 127) where = max(0, int(where)-1);
   return where;
 }
-
-#endif

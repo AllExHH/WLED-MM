@@ -8,9 +8,11 @@
 #undef WLED_ENABLE_FULL_FONTS
 #endif
 
-//constexpr uint16_t UNKNOWN_CODE = 0x2219;  // ∙ multiplication dot
-constexpr uint16_t UNKNOWN_CODE = 0x00B7;   //  · middle dot
-constexpr uint16_t BAD_CODE     = 0x2022;   //  • bigger dot
+// visual replacements when decoding fails
+//constexpr uint16_t UNKNOWN_CODE = 0x2219;  //  ∙ multiplication dot (try this if you don't like the middle dot)
+constexpr uint16_t UNKNOWN_CODE = 0x00B7;    //  · middle dot = unknown code    (generic error)
+constexpr uint16_t BAD_CODE     = 0x2022;    //  • bigger dot = cannot decode   (unicode malformed)
+constexpr uint16_t EXT_CODE     = 0x263B;    //  ☻ smiling face = extended code (unicode not supported)
 
 // UTF‑8 → reduced UTF‑16 decoding
 // translates the next unicode UTF-8 item into a 2-byte "code point"

@@ -897,18 +897,20 @@ void Segment::drawText(const unsigned char* text, size_t maxLen, int maxLetters,
     if (utf16_index < WLED_MAX_SEGNAME_LEN) {
       decoded_text[utf16_index] = unicodeToWchar16(now, maxLen);                   // UTF-8 decode into decoded_text
       decoded_text[utf16_index] = wchar16ToCodepage437(decoded_text[utf16_index]); // decoded_text to CP437 (in-place conversion)
-      // toDo: ensure that decoded_text[i] is between console_font_YxZ_first and console_font_YxZ_last
-        // if (chr < 32 || chr > 126) --> clamp chr
-        // chr -= 32; // align with font table entries
-      utf16_index++;
+      if ((decoded_text[utf16_index] >= 1) && ((decoded_text[utf16_index] <= 254))) utf16_index++; // don't advance on NUL or codes not suppoted in DrawCharacter
     }
   }
   decoded_text[utf16_index] = 0; // NUL terminate string
   size_t textLength = min(utf16_index, size_t(maxLetters));
+
 #else
   const unsigned char* decoded_text = text;  // fallback
   size_t textLength = min(strnlen((char*)text, maxLen), size_t(maxLetters));  
 #endif
+
+  // toDo: ensure that decoded_text[i] is between console_font_YxZ_first and console_font_YxZ_last
+    // if (chr < 32 || chr > 126) --> clamp chr
+    // chr -= 32; // align with font table entries
 
   // pass characters to drawCharacter()
   for (int i = 0; i < textLength; i++) {
