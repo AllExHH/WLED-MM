@@ -31,7 +31,7 @@ typedef struct {
 
 // logic for font selection based on width and height
 inline FontInfo_t getFontInfo(unsigned width, unsigned height) {
-  static FontInfo_t font = {0}; // not sure if this needs to be static - just wanted to be sure that the function return value is not in the stack area (use-after-free).
+  FontInfo_t font = {0}; // will be returned by value
 
   unsigned pixels = width * height;
   switch (pixels) {

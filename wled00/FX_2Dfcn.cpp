@@ -886,7 +886,7 @@ bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
 void Segment::drawText(const unsigned char* text, size_t maxLen, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, bool drawShadow) {
   if (!isActive()) return; // not active
   //size_t maxLetters = WLED_MAX_SEGNAME_LEN;
-  const size_t numberOfChars = strlen((const char *) text); // size in bytes // toDo check if this is duplicate -> maxLen
+  const size_t numberOfChars = strnlen((const char *) text, maxLen); // size in bytes // toDo check if this is needed - duplicate of maxLen?
 
 #if defined(WLED_ENABLE_FULL_FONTS)
   FontInfo_t font = getFontInfo(w, h);                    // use central font selection legic
@@ -936,32 +936,12 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
     uint8_t bits = 0;
     uint8_t bits_up = 0; // WLEDMM this is the previous line: font[(chr * h) + i -1]
 
-#if 1
-    // new code - experimental
+    // for wide fonts, we can add a loop here :for(offset=0, offset < font.width_bytes; offset++) {}
+
+    // get 8 pixels (byte) from raw font data
     bits = pgm_read_byte_near(&font.raw[(chr * h) + i]);
     if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&font.raw[(chr * h) + i -1]);
-#else
-  // legacy code, will be deleted after some tests
-    int pixels = w*h; 
-    switch (pixels) { // font = w * h
-      case 24: bits = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]);
-        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_4x6[(chr * h) + i -1]);
-        break;  // 4x6 font
-      case 40: bits = pgm_read_byte_near(&console_font_5x8[(chr * h) + i]); 
-        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_5x8[(chr * h) + i -1]);
-        break;  // 5x8 font
-      case 48: bits = pgm_read_byte_near(&console_font_6x8[(chr * h) + i]); 
-        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_6x8[(chr * h) + i -1]);
-        break;  // 6x8 font
-      case 63: bits = pgm_read_byte_near(&console_font_7x9[(chr * h) + i]); 
-        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_7x9[(chr * h) + i -1]);
-        break;  // 7x9 font
-      case 60: bits = pgm_read_byte_near(&console_font_5x12[(chr * h) + i]); 
-        if ((i>0) && drawShadow) bits_up = pgm_read_byte_near(&console_font_5x12[(chr * h) + i -1]);
-        break; // 5x12 font
-      default: return;
-    }
-#endif
+
     if (col2 != BLACK) col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
     uint32_t fgCol = uint32_t(col) & 0x00FFFFFF; // WLEDMM cache color value
 
