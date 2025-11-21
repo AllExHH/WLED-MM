@@ -86,12 +86,17 @@ size_t strlenUC(const unsigned char* utf8) {
 // returns the next (lesser) string index that is safe for cutting an UTF-8 string
 // Important: calling code is responsible to provide a string with at least _where_ chars
 size_t cutUnicodeAt(const unsigned char* utf8, size_t where) {
-  if (utf8[where] <= 127) return where;  // ASCII
-  size_t loopMin = max(0, int(where)-4); // max 4 characters backwards
-  size_t whereStart = where;
-  while ((isValidContinuation(utf8[where])) && (where > loopMin)) where--; // UTF-8: back until we find a non-continuation char
+  if (where == 0 || utf8[where] <= 127) return where;  // ASCII or start -> OK to cut off
 
-  if ((utf8[where] > 127) && isValidContinuation(utf8[whereStart])) where = max(0, int(where)-1); // most likely a UTF-8 lead byte -> go back one step
+  size_t loopMin = max(0, int(where)-5); // max 5 characters backwards (UTF-8 max is 4 bytes)
+  // Back up while we see continuation bytes (10xxxxxx)
+  while ((isValidContinuation(utf8[where])) && (where > loopMin)) 
+    where--;
+
+  // After the loop, utf8[where] is either ASCII or a UTF-8 lead byte
+  // If it's a lead byte (> 127), we're at the start of a multi-byte sequence.
+  // Go back one more position to exclude the entire sequence.
+  if (utf8[where] > 127) where = max(0, int(where)-1);
   return where;
 }
 

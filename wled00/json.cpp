@@ -154,8 +154,12 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
       if (len > WLED_MAX_SEGNAME_LEN) {
         len = WLED_MAX_SEGNAME_LEN;     // cut to max segment name length
         #if defined(WLED_ENABLE_FULL_FONTS)
-        if (name[len] > 127) // UTF-8 => don't cut in the middle of a multi-byte char
-          len = cutUnicodeAt((unsigned char*)name, len-1) +1; // +1 to convert between index and length
+        // UTF-8: don't cut in the middle of a multi-byte char
+        // the "or" condition is need because we have to look at both:
+        //  * name[len-1] - the character that would be included (at the cut boundary)
+        //  * name[len]   - the character that would be excluded (after the cut)
+        if ((name[len] > 127) || (name[len-1] > 127))
+          len = cutUnicodeAt((unsigned char*)name, len-1) +1; // find a safe cut // +1 to convert between index and length
         #endif
         USER_PRINTF("Segment name too long (%d chars), truncated to \"%.*s\"\n", strlen(name), (int)len, name);
       }
