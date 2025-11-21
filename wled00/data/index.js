@@ -827,7 +827,7 @@ function populateSegments(s)
 				(cfg.comp.segpwr ? segp : '') +
 				`<div class="segin" id="seg${i}in">`+
 					`<input id="seg${i}fx" value="${inst.fx}" type="hidden"/>` + // <!--WLEDMM-->
-					`<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>`+
+					`<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=64 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>`+
 					`<table class="infot segt">`+
 					`<tr>`+
 						`<td>${isMSeg?'Start X':'Start LED'}</td>`+

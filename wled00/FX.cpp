@@ -10,6 +10,10 @@
 #include "FX.h"
 #include "fcn_declare.h"
 
+#if defined(WLED_ENABLE_FULL_FONTS)
+#include "src/font/codepages.h"
+#endif
+
 #ifdef WLEDMM_FASTPATH
 #undef SEGMENT
 #undef SEGENV
@@ -6810,9 +6814,15 @@ uint16_t mode_2Dscrollingtext(void) {
     case 5: letterWidth = 5; letterHeight = 12; break;
   }
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
-  char text[33] = {'\0'};
-  unsigned maxLen = (SEGMENT.name) ? min(32, (int)strlen(SEGMENT.name)) : 0;  // WLEDMM make it robust against too long segment names
-  if (SEGMENT.name) for (size_t i=0,j=0; i<maxLen; i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
+  char text[WLED_MAX_SEGNAME_LEN+1] = {'\0'};
+  unsigned maxLen = (SEGMENT.name) ? min(WLED_MAX_SEGNAME_LEN, (int)strlen(SEGMENT.name)) : 0;  // WLEDMM make it robust against too long segment names
+
+#if !defined(WLED_ENABLE_FULL_FONTS) || defined(ESP8266)
+  if (SEGMENT.name) for (size_t i=0,j=0; i<maxLen; i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i]; // unicode killer
+#else
+  if (SEGMENT.name) for (size_t i=0,j=0; i<maxLen; i++) text[j++] = SEGMENT.name[i]; // don't kill unicode
+#endif
+
   const bool zero = strchr(text, '0') != nullptr;
   bool drawShadow = (SEGMENT.check2); // "shadow" is only needed for overlays to improve readability
 
@@ -6855,14 +6865,21 @@ uint16_t mode_2Dscrollingtext(void) {
     else if ((!strncmp_P(text,PSTR("#AMP"),4)) || (!strncmp_P(text,PSTR("#POW"),4))) sprintf_P(text, PSTR("%3.1fA"), float(strip.currentMilliamps)/1000.0f); // WLEDMM
     else sprintf_P(text, PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
   } else drawShadow = false;  // static text does not require shadow
-  const int numberOfLetters = strlen(text);
+  const int numberOfChars = strlen(text); // bytes count after macros expansions
+
+#if !defined(WLED_ENABLE_FULL_FONTS) || defined(ESP8266)
+  const int numberOfLetters = numberOfChars;
+#else
+  const int numberOfLetters = strlenUC((unsigned char *)text); // get the mumber of unicode letters
+#endif
 
   long delayTime = long(strip.now) - long(SEGENV.step);
   if ((delayTime >= 0) || (abs(delayTime) > 1500)) {   // WLEDMM keep on scrolling if timebase jumps (supersync, or brightness off, or wifi delay)
     if ((numberOfLetters * letterWidth) > cols) ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + cols;      // offset
     else                                          SEGENV.aux0  = (cols + (numberOfLetters * letterWidth))/2;
     SEGENV.aux1 = (SEGENV.aux1 + 1) & 0xFF; // color shift // WLEDMM changed to prevent overflow
-    SEGENV.step = strip.now + map2(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED);
+    long minDelay = max((FRAMETIME_FIXED/2 + FRAMETIME_FIXED/4), int(FRAMETIME));
+    SEGENV.step = strip.now + map2(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, minDelay); // WLEDMM scroll faster
     if (!SEGMENT.check2) {
       for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++ )
         SEGMENT.blendPixelColorXY(x, y, SEGCOLOR(1), 255 - (SEGMENT.custom1>>1));
@@ -6875,6 +6892,7 @@ uint16_t mode_2Dscrollingtext(void) {
   }
 
   if (SEGENV.check2 && ((numberOfLetters * letterWidth) > cols)) drawShadow = true; // scrolling overlay is easier to read with shadow
+#if !defined(WLED_ENABLE_FULL_FONTS)
   for (int i = 0; i < numberOfLetters; i++) {
     if (int(cols) - int(SEGENV.aux0) + letterWidth*(i+1) < 0) continue; // don't draw characters off-screen
     uint32_t col1 = SEGMENT.color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0);
@@ -6885,10 +6903,26 @@ uint16_t mode_2Dscrollingtext(void) {
     }
     SEGMENT.drawCharacter(text[i], int(cols) - int(SEGENV.aux0) + letterWidth*i, yoffset, letterWidth, letterHeight, col1, col2, drawShadow);
   }
+#else
+  uint32_t col1 = SEGMENT.color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0);
+  uint32_t col2 = BLACK;
+  if (SEGMENT.check1 && SEGMENT.palette == 0) {
+    col1 = SEGCOLOR(0);
+    col2 = SEGCOLOR(2);
+  }
+  maxLen = numberOfChars; // Ensure maxLen reflects the actual rendered text, not the original SEGMENT.name length
+  SEGMENT.drawText((unsigned char*)text, maxLen, int(cols) - int(SEGENV.aux0), yoffset, letterWidth, letterHeight, col1, col2, drawShadow);
+#endif
+
+  // WLEDMM add some blur
+  if (SEGMENT.check3 && !SEGMENT.check2) { // blur looks ugly together with "overlay"
+    if (SEGMENT.custom1 < 16) SEGMENT.blurRows(16); // only blur rows when no trail
+    SEGMENT.blurCols(20);
+  }
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size,,Gradient,Overlay;!,!,Gradient;!;2;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0";
+static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size,,Gradient,Overlay,Soft;!,!,Gradient;!;2;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0";
 
 
 ////////////////////////////
