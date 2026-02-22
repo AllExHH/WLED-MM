@@ -1,4 +1,4 @@
-#include "usermod_v2_four_line_display.h"
+#include "./usermod_v2_four_line_display.h"
 #include "4LD_wled_fonts.h"
 
 //
@@ -226,7 +226,28 @@ void FourLineDisplayUsermod::setup() {
       if (!PinManager::allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { type = NONE; }
     }
   } else {
-    if (i2c_scl<0 || i2c_sda<0) { type=NONE; }
+    // try to recover when persisted config has disabled I2C pins (-1)
+    if (i2c_scl < 0 || i2c_sda < 0) {
+      #if defined(HW_PIN_SCL) && defined(HW_PIN_SDA)
+      if (HW_PIN_SCL >= 0 && HW_PIN_SDA >= 0) {
+        PinManagerPinType i2cPins[2] = { { HW_PIN_SDA, true }, { HW_PIN_SCL, true } };
+        if (PinManager::allocateMultiplePins(i2cPins, 2, PinOwner::HW_I2C)) {
+          i2c_sda = HW_PIN_SDA;
+          i2c_scl = HW_PIN_SCL;
+          #ifdef ARDUINO_ARCH_ESP32
+          if (!Wire.setPins(i2c_sda, i2c_scl)) {
+            i2c_sda = i2c_scl = -1;
+          } else {
+            Wire.begin();
+          }
+          #else
+          Wire.begin(i2c_sda, i2c_scl);
+          #endif
+        }
+      }
+      #endif
+    }
+    if (i2c_scl < 0 || i2c_sda < 0) { type = NONE; }
   }
 
   DEBUG_PRINTLN(F("Allocating display."));
@@ -235,6 +256,7 @@ void FourLineDisplayUsermod::setup() {
     case SSD1306:       u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_HW_I2C(); break;
     case SH1106:        u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_HW_I2C();    break;
     case SSD1306_64:    u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C();    break;
+    case SSD1306_72X40: u8x8 = (U8X8 *) new U8X8_SSD1306_72X40_ER_HW_I2C();         break;
     case SSD1305:       u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C();  break;
     case SSD1305_64:    u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C();  break;
     case SSD1309_64:    u8x8 = (U8X8 *) new U8X8_SSD1309_128X64_NONAME0_HW_I2C();   break;
@@ -887,6 +909,7 @@ void FourLineDisplayUsermod::appendConfigData() {
   oappend(F("addOption(dd,'SSD1306',1);"));
   oappend(F("addOption(dd,'SH1106',2);"));
   oappend(F("addOption(dd,'SSD1306 128x64',3);"));
+  oappend(F("addOption(dd,'SSD1306 72x40',10);"));
   oappend(F("addOption(dd,'SSD1305',4);"));
   oappend(F("addOption(dd,'SSD1305 128x64',5);"));
   oappend(F("addOption(dd,'SSD1309 128x64',9);"));
@@ -1013,6 +1036,10 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
       switch (type) {
         case SSD1306:
           u8x8_Setup(u8x8->getU8x8(), u8x8_d_ssd1306_128x32_univision, u8x8_cad_ssd13xx_fast_i2c, u8x8_byte_arduino_hw_i2c, u8x8_gpio_and_delay_arduino);
+          u8x8_SetPin_HW_I2C(u8x8->getU8x8(), U8X8_PIN_NONE, U8X8_PIN_NONE, U8X8_PIN_NONE);
+          break;
+        case SSD1306_72X40:
+          u8x8_Setup(u8x8->getU8x8(), u8x8_d_ssd1306_72x40_er, u8x8_cad_ssd13xx_fast_i2c, u8x8_byte_arduino_hw_i2c, u8x8_gpio_and_delay_arduino);
           u8x8_SetPin_HW_I2C(u8x8->getU8x8(), U8X8_PIN_NONE, U8X8_PIN_NONE, U8X8_PIN_NONE);
           break;
         case SH1106:

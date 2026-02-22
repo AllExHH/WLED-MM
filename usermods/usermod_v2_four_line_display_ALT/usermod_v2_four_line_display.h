@@ -1,8 +1,17 @@
-#include "wled.h"
+#pragma once
+
+// Für unterschiedliche Build-/IntelliSense-Kontexte (PlatformIO, direkte Datei-Analyse)
+// robust auf den WLED-Header auflösen.
+#if __has_include("wled.h")
+  #include "wled.h"
+#elif __has_include("../../wled00/wled.h")
+  #include "../../wled00/wled.h"
+#else
+  #error "wled.h konnte nicht gefunden werden. Bitte Include-Pfade/Projektkonfiguration prüfen."
+#endif
+
 #undef U8X8_NO_HW_I2C // borrowed from WLEDMM: we do want I2C hardware drivers - if possible
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
-
-#pragma once
 
 #ifndef FLD_ESP32_NO_THREADS
   #define FLD_ESP32_USE_THREADS  // comment out to use 0.13.x behaviour without parallel update task - slower, but more robust. May delay other tasks like LEDs or audioreactive!!
@@ -50,15 +59,16 @@
 
 typedef enum {
   NONE = 0,
-  SSD1306,          // U8X8_SSD1306_128X32_UNIVISION_HW_I2C
-  SH1106,           // U8X8_SH1106_128X64_WINSTAR_HW_I2C
-  SSD1306_64,       // U8X8_SSD1306_128X64_NONAME_HW_I2C
-  SSD1305,          // U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C
-  SSD1305_64,       // U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C
-  SSD1306_SPI,      // U8X8_SSD1306_128X32_NONAME_HW_SPI
-  SSD1306_SPI64,    // U8X8_SSD1306_128X64_NONAME_HW_SPI
-  SSD1309_SPI64,    // U8X8_SSD1309_128X64_NONAME0_4W_HW_SPI
-  SSD1309_64        // U8X8_SSD1309_128X64_NONAME0_HW_I2C
+  SSD1306 = 1,      // U8X8_SSD1306_128X32_UNIVISION_HW_I2C
+  SH1106 = 2,       // U8X8_SH1106_128X64_WINSTAR_HW_I2C
+  SSD1306_64 = 3,   // U8X8_SSD1306_128X64_NONAME_HW_I2C
+  SSD1305 = 4,      // U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C
+  SSD1305_64 = 5,   // U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C
+  SSD1306_SPI = 6,  // U8X8_SSD1306_128X32_NONAME_HW_SPI
+  SSD1306_SPI64 = 7,// U8X8_SSD1306_128X64_NONAME_HW_SPI
+  SSD1309_SPI64 = 8,// U8X8_SSD1309_128X64_NONAME0_4W_HW_SPI
+  SSD1309_64 = 9,   // U8X8_SSD1309_128X64_NONAME0_HW_I2C
+  SSD1306_72X40 = 10// U8X8_SSD1306_72X40_ER_HW_I2C
 } DisplayType;
 
 class FourLineDisplayUsermod : public Usermod {
