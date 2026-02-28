@@ -1,4 +1,4 @@
-#include "usermod_v2_four_line_display.h"
+#include "./usermod_v2_four_line_display.h"
 #include "4LD_wled_fonts.h"
 
 //
